@@ -1,0 +1,128 @@
+@use '@angular/material' as mat;
+
+// MetricsSimple Brand Colors (from spec deck)
+$ms-primary: (
+  50: #E3F2FD,
+  100: #BBDEFB,
+  200: #90CAF9,
+  300: #64B5F6,
+  400: #42A5F5,
+  500: #1E88E5,
+  600: #1976D2,
+  700: #1565C0,
+  800: #0D47A1,
+  900: #0D47A1,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: rgba(0, 0, 0, 0.87),
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+  )
+);
+
+$ms-accent: (
+  50: #E8F5E9,
+  100: #C8E6C9,
+  200: #A5D6A7,
+  300: #81C784,
+  400: #66BB6A,
+  500: #4CAF50,
+  600: #43A047,
+  700: #388E3C,
+  800: #2E7D32,
+  900: #1B5E20,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: rgba(0, 0, 0, 0.87),
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+  )
+);
+
+// Define the theme using standard functions
+$ms-primary-palette: mat.define-palette($ms-primary, 500, 300, 700);
+$ms-accent-palette: mat.define-palette($ms-accent, 500, 300, 700);
+$ms-warn-palette: mat.define-palette(mat.$red-palette);
+
+$ms-light-theme: mat.define-light-theme((
+  color: (
+    primary: $ms-primary-palette,
+    accent: $ms-accent-palette,
+    warn: $ms-warn-palette,
+  ),
+  typography: mat.define-typography-config(
+    $font-family: 'Inter, Roboto, sans-serif',
+  ),
+  density: 0,
+));
+
+// Include core styles
+@include mat.core();
+
+// Include theme styles
+@include mat.all-component-themes($ms-light-theme);
+
+// CSS Custom Properties for design tokens
+:root {
+  // Primary colors
+  --mat-sys-primary: #1E88E5;
+  --mat-sys-on-primary: #FFFFFF;
+  --mat-sys-primary-container: #BBDEFB;
+  --mat-sys-on-primary-container: #0D47A1;
+
+  // Secondary colors
+  --mat-sys-secondary: #4CAF50;
+  --mat-sys-on-secondary: #FFFFFF;
+  --mat-sys-secondary-container: #C8E6C9;
+  --mat-sys-on-secondary-container: #1B5E20;
+
+  // Surface colors
+  --mat-sys-surface: #FFFFFF;
+  --mat-sys-on-surface: #1C1B1F;
+  --mat-sys-surface-container: #F5F5F5;
+  --mat-sys-on-surface-variant: #757575;
+
+  // Error colors
+  --mat-sys-error: #B00020;
+  --mat-sys-on-error: #FFFFFF;
+  --mat-sys-error-container: #FFEBEE;
+  --mat-sys-on-error-container: #B00020;
+
+  // Outline
+  --mat-sys-outline: #79747E;
+  --mat-sys-outline-variant: #E0E0E0;
+
+  // Typography
+  --ms-font-family: 'Inter', 'Roboto', sans-serif;
+  --ms-font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+
+  // Spacing
+  --ms-spacing-xs: 4px;
+  --ms-spacing-sm: 8px;
+  --ms-spacing-md: 16px;
+  --ms-spacing-lg: 24px;
+  --ms-spacing-xl: 32px;
+
+  // Border radius
+  --ms-radius-sm: 4px;
+  --ms-radius-md: 8px;
+  --ms-radius-lg: 16px;
+  --ms-radius-full: 9999px;
+
+  // Shadows
+  --ms-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --ms-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --ms-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
