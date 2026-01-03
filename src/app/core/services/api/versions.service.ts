@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ProcessVersionDto } from '../../../shared/models/process-version.model';
 import { normalizeProcessVersion } from '../../../shared/utils/normalizers';
+import { environment } from '../../../../environments/environment';
 
 /**
  * VersionsService - Cliente de API para ProcessVersions
@@ -15,7 +16,7 @@ export class VersionsService {
   private readonly http = inject(HttpClient);
 
   private getBaseUrl(processId: string): string {
-    return `/api/processes/${encodeURIComponent(processId)}/versions`;
+    return `${environment.apiBaseUrl}/processes/${encodeURIComponent(processId)}/versions`;
   }
 
   /**

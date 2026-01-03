@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ProcessDto } from '../../../shared/models/process.model';
 import { normalizeProcess } from '../../../shared/utils/normalizers';
+import { environment } from '../../../../environments/environment';
 
 /**
  * ProcessesService - Cliente de API para Processes
@@ -12,7 +13,7 @@ import { normalizeProcess } from '../../../shared/utils/normalizers';
   providedIn: 'root'
 })
 export class ProcessesService {
-  private readonly baseUrl = '/api/processes';
+  private readonly baseUrl = `${environment.apiBaseUrl}/processes`;
   private readonly http = inject(HttpClient);
 
   /**

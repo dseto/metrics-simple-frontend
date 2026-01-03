@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DslGenerateRequest, DslGenerateResult } from '../../../shared/models/ai.model';
+import { environment } from '../../../../environments/environment';
 
 /**
  * AiService - Cliente de API para AI Assistant
@@ -11,7 +12,7 @@ import { DslGenerateRequest, DslGenerateResult } from '../../../shared/models/ai
   providedIn: 'root'
 })
 export class AiService {
-  private readonly baseUrl = '/api/ai';
+  private readonly baseUrl = `${environment.apiBaseUrl}/ai`;
   private readonly http = inject(HttpClient);
 
   /**

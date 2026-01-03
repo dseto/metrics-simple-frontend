@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { PreviewTransformRequest, PreviewTransformResponse } from '../../../shared/models/preview.model';
+import { environment } from '../../../../environments/environment';
 
 /**
  * PreviewService - Cliente de API para Preview Transform
@@ -11,7 +12,7 @@ import { PreviewTransformRequest, PreviewTransformResponse } from '../../../shar
   providedIn: 'root'
 })
 export class PreviewService {
-  private readonly baseUrl = '/api/preview';
+  private readonly baseUrl = `${environment.apiBaseUrl}/preview`;
   private readonly http = inject(HttpClient);
 
   /**
