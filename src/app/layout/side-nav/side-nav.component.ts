@@ -1,18 +1,29 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
+import { Observable, map } from 'rxjs';
+import { AuthProvider } from '../../core/auth/providers';
 
 interface NavItem {
   label: string;
   route: string;
   icon: string;
+  /** Se true, requer role Metrics.Admin */
+  adminOnly?: boolean;
 }
 
 /**
  * MsSideNav - Menu lateral de navegação
  * Conforme ui-routes-and-state-machine.md
+ * Conforme specs/frontend/05-ui/login-and-access-control.md
+ *
+ * Controle de acesso (UX):
+ * - Menus/ações de CRUD (create/edit/delete) devem ficar visíveis somente para Metrics.Admin
+ * - Reader deve conseguir navegar/usar apenas telas de leitura/preview
+ *
+ * NOTA: Isto é apenas UX. O backend é a autoridade final (403).
  */
 @Component({
   selector: 'ms-side-nav',
@@ -28,16 +39,20 @@ interface NavItem {
 
       <!-- Navigation -->
       <mat-nav-list>
-        <a
-          mat-list-item
-          *ngFor="let item of navItems"
-          [routerLink]="item.route"
-          routerLinkActive="active"
-          (click)="onNavigate.emit()"
-          [attr.data-testid]="'nav.' + item.route.replace('/', '')">
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
-        </a>
+        @for (item of navItems; track item.route) {
+          <!-- Mostrar item se não é adminOnly OU se o usuário é admin -->
+          @if (!item.adminOnly || (isAdmin$ | async)) {
+            <a
+              mat-list-item
+              [routerLink]="item.route"
+              routerLinkActive="active"
+              (click)="onNavigate.emit()"
+              [attr.data-testid]="'nav.' + item.route.replace('/', '')">
+              <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+              <span matListItemTitle>{{ item.label }}</span>
+            </a>
+          }
+        }
       </mat-nav-list>
 
       <!-- Footer -->
@@ -107,11 +122,25 @@ interface NavItem {
 export class SideNavComponent {
   @Output() onNavigate = new EventEmitter<void>();
 
+  private readonly authProvider = inject(AuthProvider);
+
+  /**
+   * Observable para verificar se usuário é admin
+   * Conforme specs/frontend/05-ui/login-and-access-control.md
+   */
+  readonly isAdmin$: Observable<boolean> = this.authProvider.hasRole('Metrics.Admin');
+
+  /**
+   * Itens de navegação com controle de acesso por role
+   * Conforme specs/frontend/05-ui/login-and-access-control.md:
+   * - Admin-only: Menus/ações de CRUD (create/edit/delete)
+   * - Reader: apenas leitura/preview
+   */
   navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
     { label: 'Processos', route: '/processes', icon: 'account_tree' },
     { label: 'Conectores', route: '/connectors', icon: 'cable' },
     { label: 'Preview', route: '/preview', icon: 'preview' },
-    { label: 'Runner', route: '/runner', icon: 'terminal' }
+    { label: 'Runner', route: '/runner', icon: 'terminal', adminOnly: true }
   ];
 }

@@ -70,10 +70,6 @@
         }
       }
     },
-    "constraints": {
-      "$ref": "dslGenerateConstraints.schema.json",
-      "description": "Constraints to be applied during AI-assisted DSL generation for this version."
-    },
     "dsl": {
       "type": "object",
       "additionalProperties": false,

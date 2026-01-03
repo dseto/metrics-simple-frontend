@@ -1,10 +1,35 @@
 import { Routes } from '@angular/router';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
+import { authGuard } from './core/auth/guards/auth.guard';
+import { adminGuard } from './core/auth/guards/admin.guard';
 
+/**
+ * Rotas da aplicação
+ * Conforme specs/frontend/04-execution/auth-flow-and-interceptors.md
+ *
+ * Fluxo:
+ * 1) Usuário acessa rota protegida sem token
+ * 2) AuthGuard redireciona /login
+ * 3) Login envia POST /api/auth/token
+ * 4) Em sucesso: salvar token, navegar para rota inicial
+ *
+ * Guards:
+ * - authGuard: requer autenticação (token)
+ * - adminGuard: requer role Metrics.Admin
+ */
 export const routes: Routes = [
+  // Rota de login (pública)
+  {
+    path: 'login',
+    loadComponent: () => import('./features/login/login.component')
+      .then(m => m.LoginComponent),
+    title: 'Login - MetricsSimple'
+  },
+  // Shell principal (protegido por authGuard)
   {
     path: '',
     component: AppShellComponent,
+    canActivate: [authGuard],
     children: [
       {
         path: '',
@@ -34,10 +59,13 @@ export const routes: Routes = [
       {
         path: 'runner',
         loadChildren: () => import('./features/runner/runner.routes')
-          .then(m => m.RUNNER_ROUTES)
+          .then(m => m.RUNNER_ROUTES),
+        // Runner requer role Admin
+        canActivate: [adminGuard]
       }
     ]
   },
+  // Wildcard - redireciona para login se não autenticado
   {
     path: '**',
     redirectTo: 'dashboard'

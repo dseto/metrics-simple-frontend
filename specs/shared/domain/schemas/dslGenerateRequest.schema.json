@@ -33,8 +33,34 @@
       "default": "jsonata"
     },
     "constraints": {
-      "$ref": "dslGenerateConstraints.schema.json",
-      "description": "Constraints to be applied during DSL generation."
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxColumns",
+        "allowTransforms",
+        "forbidNetworkCalls",
+        "forbidCodeExecution"
+      ],
+      "properties": {
+        "maxColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200,
+          "default": 50
+        },
+        "allowTransforms": {
+          "type": "boolean",
+          "default": true
+        },
+        "forbidNetworkCalls": {
+          "type": "boolean",
+          "default": true
+        },
+        "forbidCodeExecution": {
+          "type": "boolean",
+          "default": true
+        }
+      }
     },
     "hints": {
       "type": [
