@@ -108,6 +108,18 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
             </td>
           </ng-container>
 
+          <ng-container matColumnDef="token">
+            <th mat-header-cell *matHeaderCellDef>API Token</th>
+            <td mat-cell *matCellDef="let connector">
+              <span class="token-indicator" [class.configured]="connector.hasApiToken">
+                <mat-icon class="token-icon">
+                  {{ connector.hasApiToken ? 'check_circle' : 'radio_button_unchecked' }}
+                </mat-icon>
+                {{ connector.hasApiToken ? 'Configurado' : 'Não configurado' }}
+              </span>
+            </td>
+          </ng-container>
+
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef>Status</th>
             <td mat-cell *matCellDef="let connector">
@@ -189,6 +201,24 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
       color: #155724;
     }
 
+    .token-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .token-indicator.configured {
+      color: var(--mat-sys-primary);
+    }
+
+    .token-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
     .delete-action {
       color: var(--mat-sys-error);
     }
@@ -201,7 +231,7 @@ export class ConnectorsListComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
 
   connectors: ConnectorDto[] = [];
-  displayedColumns = ['name', 'baseUrl', 'authRef', 'timeout', 'status', 'actions'];
+  displayedColumns = ['name', 'baseUrl', 'authRef', 'timeout', 'token', 'status', 'actions'];
   state: PageState = { kind: 'idle' };
 
   ngOnInit(): void {

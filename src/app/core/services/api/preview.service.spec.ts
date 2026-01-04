@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { PreviewService } from './preview.service';
 import { PreviewTransformRequest, PreviewTransformResponse } from '../../../shared/models/preview.model';
+import { environment } from '../../../../environments/environment';
 
 describe('PreviewService', () => {
   let service: PreviewService;
   let httpMock: HttpTestingController;
+  const baseUrl = `${environment.apiBaseUrl}/preview`;
 
   const mockRequest: PreviewTransformRequest = {
     dsl: {
@@ -52,7 +54,7 @@ describe('PreviewService', () => {
         expect(response.errors.length).toBe(0);
       });
 
-      const req = httpMock.expectOne('/api/preview/transform');
+      const req = httpMock.expectOne(`${baseUrl}/transform`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(mockRequest);
       req.flush(mockResponse);
@@ -74,7 +76,7 @@ describe('PreviewService', () => {
         expect(response.errors[0].path).toBe('$.total');
       });
 
-      const req = httpMock.expectOne('/api/preview/transform');
+      const req = httpMock.expectOne(`${baseUrl}/transform`);
       req.flush(errorResponse);
     });
 
@@ -85,7 +87,7 @@ describe('PreviewService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/api/preview/transform');
+      const req = httpMock.expectOne(`${baseUrl}/transform`);
       req.flush({ message: 'Internal server error' }, { status: 500, statusText: 'Internal Server Error' });
     });
   });

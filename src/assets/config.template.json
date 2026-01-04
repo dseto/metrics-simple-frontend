@@ -1,0 +1,6 @@
+{
+  "apiBaseUrl": "${API_BASE_URL}",
+  "aiEnabled": "${AI_ENABLED}",
+  "production": "${PRODUCTION}",
+  "envName": "${ENV_NAME}"
+}

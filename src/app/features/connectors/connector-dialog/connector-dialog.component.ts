@@ -6,6 +6,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ConnectorsService } from '../../../core/services/api/connectors.service';
 import { ErrorHandlerService } from '../../../core/services/error-handler.service';
 import { SnackbarService } from '../../../core/services/snackbar.service';
@@ -30,7 +32,9 @@ export interface ConnectorDialogData {
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatIconModule,
+    MatTooltipModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Novo Conector' : 'Editar Conector' }}</h2>
@@ -96,6 +100,42 @@ export interface ConnectorDialogData {
           <mat-error *ngIf="form.get('timeoutSeconds')?.hasError('required')">Campo obrigatório.</mat-error>
           <mat-error *ngIf="form.get('timeoutSeconds')?.hasError('min')">O timeout deve ser maior ou igual a 1.</mat-error>
         </mat-form-field>
+
+        <!-- API Token (write-only) -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>API Token</mat-label>
+          <input
+            matInput
+            type="password"
+            formControlName="apiToken"
+            placeholder="Token de autenticação (opcional)"
+            data-testid="connector-dialog.apiToken"
+            autocomplete="new-password">
+          <mat-hint *ngIf="data.mode === 'create'">
+            Token Bearer usado para autenticar contra a API externa (opcional).
+          </mat-hint>
+          <mat-hint *ngIf="data.mode === 'edit' && !hasApiToken">
+            Deixe vazio para manter o token atual. Preencha para substituir.
+          </mat-hint>
+          <mat-hint *ngIf="data.mode === 'edit' && hasApiToken" class="token-configured">
+            <mat-icon class="hint-icon">check_circle</mat-icon>
+            Token configurado. Deixe vazio para manter, preencha para substituir.
+          </mat-hint>
+          <mat-error *ngIf="form.get('apiToken')?.hasError('maxlength')">
+            Máximo de 4096 caracteres.
+          </mat-error>
+          <button
+            *ngIf="data.mode === 'edit' && hasApiToken"
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="clearToken()"
+            [disabled]="saving"
+            matTooltip="Limpar token (remover)"
+            data-testid="connector-dialog.clearToken">
+            <mat-icon>backspace</mat-icon>
+          </button>
+        </mat-form-field>
       </form>
     </mat-dialog-content>
 
@@ -133,6 +173,19 @@ export interface ConnectorDialogData {
     mat-spinner {
       margin-right: 8px;
     }
+
+    .token-configured {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--mat-sys-primary);
+    }
+
+    .hint-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
   `]
 })
 export class ConnectorDialogComponent implements OnInit {
@@ -145,11 +198,14 @@ export class ConnectorDialogComponent implements OnInit {
 
   form!: FormGroup;
   saving = false;
+  hasApiToken = false;
+  clearingToken = false;
 
   ngOnInit(): void {
     this.initForm();
 
     if (this.data.mode === 'edit' && this.data.connector) {
+      this.hasApiToken = this.data.connector.hasApiToken || false;
       this.patchForm(this.data.connector);
     }
   }
@@ -168,6 +224,27 @@ export class ConnectorDialogComponent implements OnInit {
       timeoutSeconds: formValue.timeoutSeconds,
       enabled: true
     };
+
+    // Semântica apiToken:
+    // - Create: se preenchido => enviar string
+    // - Edit: se clearingToken => enviar null; se preenchido => enviar string; se vazio => omitir
+    if (this.data.mode === 'create') {
+      const token = formValue.apiToken?.trim();
+      if (token && token.length > 0) {
+        dto.apiToken = token;
+      }
+    } else {
+      // Edit mode
+      if (this.clearingToken) {
+        dto.apiToken = null;
+      } else {
+        const token = formValue.apiToken?.trim();
+        if (token && token.length > 0) {
+          dto.apiToken = token;
+        }
+        // Se vazio => não incluir (omitir, mantém token no backend)
+      }
+    }
 
     const request = this.data.mode === 'create'
       ? this.connectorsService.create(dto)
@@ -190,6 +267,11 @@ export class ConnectorDialogComponent implements OnInit {
     });
   }
 
+  clearToken(): void {
+    this.clearingToken = true;
+    this.form.patchValue({ apiToken: '' });
+  }
+
   private initForm(): void {
     const urlPattern = /^https?:\/\/.+/;
 
@@ -198,7 +280,8 @@ export class ConnectorDialogComponent implements OnInit {
       name: ['', Validators.required],
       baseUrl: ['', [Validators.required, Validators.pattern(urlPattern)]],
       authRef: ['', Validators.required],
-      timeoutSeconds: [60, [Validators.required, Validators.min(1)]]
+      timeoutSeconds: [60, [Validators.required, Validators.min(1)]],
+      apiToken: ['', [Validators.maxLength(4096)]]
     });
   }
 
@@ -208,7 +291,8 @@ export class ConnectorDialogComponent implements OnInit {
       name: connector.name,
       baseUrl: connector.baseUrl,
       authRef: connector.authRef,
-      timeoutSeconds: connector.timeoutSeconds
+      timeoutSeconds: connector.timeoutSeconds,
+      apiToken: '' // SEMPRE vazio em edit, conforme spec
     });
 
     // Disable ID field in edit mode

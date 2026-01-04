@@ -88,6 +88,75 @@ describe('Normalizers', () => {
       expect(result.baseUrl).toBe('https://api.example.com');
       expect(result.authRef).toBe('API_KEY');
     });
+
+    it('should remove hasApiToken (read-only)', () => {
+      const connector: ConnectorDto = {
+        id: 'test',
+        name: 'Test',
+        baseUrl: 'https://api.example.com',
+        authRef: 'KEY',
+        timeoutSeconds: 60,
+        hasApiToken: true
+      };
+
+      const result = normalizeConnector(connector);
+      expect(result.hasApiToken).toBeUndefined();
+    });
+
+    it('should handle apiToken as string (trim and keep)', () => {
+      const connector: ConnectorDto = {
+        id: 'test',
+        name: 'Test',
+        baseUrl: 'https://api.example.com',
+        authRef: 'KEY',
+        timeoutSeconds: 60,
+        apiToken: '  secret-token-123  '
+      };
+
+      const result = normalizeConnector(connector);
+      expect(result.apiToken).toBe('secret-token-123');
+    });
+
+    it('should handle apiToken as null (explicit removal)', () => {
+      const connector: ConnectorDto = {
+        id: 'test',
+        name: 'Test',
+        baseUrl: 'https://api.example.com',
+        authRef: 'KEY',
+        timeoutSeconds: 60,
+        apiToken: null
+      };
+
+      const result = normalizeConnector(connector);
+      expect(result.apiToken).toBeNull();
+    });
+
+    it('should omit apiToken when empty string (keep current token)', () => {
+      const connector: ConnectorDto = {
+        id: 'test',
+        name: 'Test',
+        baseUrl: 'https://api.example.com',
+        authRef: 'KEY',
+        timeoutSeconds: 60,
+        apiToken: '   '
+      };
+
+      const result = normalizeConnector(connector);
+      expect('apiToken' in result).toBe(false);
+    });
+
+    it('should omit apiToken when undefined (keep current token)', () => {
+      const connector: ConnectorDto = {
+        id: 'test',
+        name: 'Test',
+        baseUrl: 'https://api.example.com',
+        authRef: 'KEY',
+        timeoutSeconds: 60
+      };
+
+      const result = normalizeConnector(connector);
+      expect('apiToken' in result).toBe(false);
+    });
   });
 
   describe('normalizeKeyValueMap', () => {

@@ -1,0 +1,41 @@
+services:
+  angular-frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: metrics-simple-frontend
+    ports:
+      - "4200:80"
+    environment:
+      - NODE_ENV=production
+      - API_BASE_URL=http://csharp-api:8080/api/v1
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    networks:
+      - metrics-net
+
+  # csharp-api service - uncomment when backend is ready
+  # csharp-api:
+  #   image: metrics-simple-api:latest
+  #   container_name: metrics-simple-api
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Production
+  #     - ASPNETCORE_URLS=http://+:8080
+  #   networks:
+  #     - metrics-net
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8080/health", "||", "exit", "1"]
+  #     interval: 30s
+  #     timeout: 3s
+  #     start_period: 10s
+  #     retries: 3
+
+networks:
+  metrics-net:
+    driver: bridge

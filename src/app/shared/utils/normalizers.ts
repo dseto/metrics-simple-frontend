@@ -104,15 +104,42 @@ export function normalizeKeyValueMap(
 
 /**
  * Normaliza Connector antes de enviar para API
+ * 
+ * Semântica apiToken:
+ * - Se presente e string => trim e enviar
+ * - Se null => enviar null (remove token)
+ * - Se undefined/omitido => não enviar (mantém token no backend)
  */
 export function normalizeConnector(dto: ConnectorDto): ConnectorDto {
-  return {
+  const normalized: ConnectorDto = {
     ...dto,
     id: normalizeString(dto.id),
     name: normalizeString(dto.name),
     baseUrl: normalizeString(dto.baseUrl),
     authRef: normalizeString(dto.authRef)
   };
+
+  // Processa apiToken conforme semântica
+  if ('apiToken' in dto) {
+    if (dto.apiToken === null) {
+      // Explicitamente null => remover token
+      normalized.apiToken = null;
+    } else if (typeof dto.apiToken === 'string') {
+      const trimmed = dto.apiToken.trim();
+      if (trimmed.length > 0) {
+        // String não vazia => substituir token
+        normalized.apiToken = trimmed;
+      } else {
+        // String vazia => omitir (não enviar)
+        delete normalized.apiToken;
+      }
+    }
+  }
+
+  // Remove hasApiToken (read-only, nunca enviar)
+  delete normalized.hasApiToken;
+
+  return normalized;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { ApplicationConfig, importProvidersFrom } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, APP_INITIALIZER } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -10,6 +10,7 @@ import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
 import { AuthProvider } from './core/auth/providers/auth-provider.interface';
 import { LocalJwtAuthProvider } from './core/auth/providers/local-jwt-auth.provider';
+import { RuntimeConfigService } from './core/services/runtime-config.service';
 
 /**
  * Configuração da aplicação
@@ -24,6 +25,13 @@ import { LocalJwtAuthProvider } from './core/auth/providers/local-jwt-auth.provi
  * - Hoje: LocalJwtAuthProvider (LocalJwt)
  * - Futuro: OidcAuthProvider (Okta/Entra)
  */
+/**
+ * Factory para inicializar configurações runtime antes do bootstrap
+ */
+export function initializeApp(configService: RuntimeConfigService) {
+  return () => configService.loadConfig();
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes, withComponentInputBinding()),
@@ -35,6 +43,13 @@ export const appConfig: ApplicationConfig = {
       ])
     ),
     provideAnimationsAsync(),
+    // APP_INITIALIZER: Carrega configurações runtime antes do bootstrap
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeApp,
+      deps: [RuntimeConfigService],
+      multi: true
+    },
     // AuthProvider - usar LocalJwtAuthProvider por padrão
     // Conforme specs/frontend/02-domain/auth-domain.md
     // Para migrar para OIDC: trocar para OidcAuthProvider

@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { AiService } from './ai.service';
 import { DslGenerateRequest, DslGenerateResult, createDefaultConstraints } from '../../../shared/models/ai.model';
+import { environment } from '../../../../environments/environment';
 
 describe('AiService', () => {
   let service: AiService;
   let httpMock: HttpTestingController;
+  const baseUrl = `${environment.apiBaseUrl}/ai/dsl`;
 
   const mockRequest: DslGenerateRequest = {
     goalText: 'Extract total sales by quarter',
@@ -62,7 +64,7 @@ describe('AiService', () => {
         expect(response.rationale).toBeTruthy();
       });
 
-      const req = httpMock.expectOne('/api/ai/dsl/generate');
+      const req = httpMock.expectOne(`${baseUrl}/generate`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(mockRequest);
       req.flush(mockResponse);
@@ -75,7 +77,7 @@ describe('AiService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/api/ai/dsl/generate');
+      const req = httpMock.expectOne(`${baseUrl}/generate`);
       req.flush(
         { code: 'AI_DISABLED', message: 'AI is disabled in this installation' },
         { status: 503, statusText: 'Service Unavailable' }
@@ -89,7 +91,7 @@ describe('AiService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/api/ai/dsl/generate');
+      const req = httpMock.expectOne(`${baseUrl}/generate`);
       req.flush(
         { code: 'AI_RATE_LIMITED', message: 'Too many requests' },
         { status: 429, statusText: 'Too Many Requests' }
@@ -107,7 +109,7 @@ describe('AiService', () => {
         expect(response.warnings[0]).toContain('Complex');
       });
 
-      const req = httpMock.expectOne('/api/ai/dsl/generate');
+      const req = httpMock.expectOne(`${baseUrl}/generate`);
       req.flush(responseWithWarnings);
     });
   });

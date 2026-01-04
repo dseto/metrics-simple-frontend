@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ConnectorDto } from '../../../shared/models/connector.model';
 import { normalizeConnector } from '../../../shared/utils/normalizers';
-import { environment } from '../../../../environments/environment';
+import { RuntimeConfigService } from '../runtime-config.service';
 
 /**
  * ConnectorsService - Cliente de API para Connectors
@@ -13,8 +13,12 @@ import { environment } from '../../../../environments/environment';
   providedIn: 'root'
 })
 export class ConnectorsService {
-  private readonly baseUrl = `${environment.apiBaseUrl}/connectors`;
   private readonly http = inject(HttpClient);
+  private readonly config = inject(RuntimeConfigService);
+  
+  private get baseUrl(): string {
+    return `${this.config.apiBaseUrl}/connectors`;
+  }
 
   /**
    * Lista todos os connectors

@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ProcessesService } from './processes.service';
 import { ProcessDto, ProcessStatus } from '../../../shared/models/process.model';
+import { environment } from '../../../../environments/environment';
 
 describe('ProcessesService', () => {
   let service: ProcessesService;
   let httpMock: HttpTestingController;
+  const baseUrl = `${environment.apiBaseUrl}/processes`;
 
   const mockProcess: ProcessDto = {
     id: 'test-process',
@@ -45,7 +47,7 @@ describe('ProcessesService', () => {
         expect(processes.length).toBe(1);
       });
 
-      const req = httpMock.expectOne('/api/processes');
+      const req = httpMock.expectOne(baseUrl);
       expect(req.request.method).toBe('GET');
       req.flush(mockProcesses);
     });
@@ -56,7 +58,7 @@ describe('ProcessesService', () => {
         expect(processes.length).toBe(0);
       });
 
-      const req = httpMock.expectOne('/api/processes');
+      const req = httpMock.expectOne(baseUrl);
       req.flush([]);
     });
   });
@@ -68,7 +70,7 @@ describe('ProcessesService', () => {
         expect(process.id).toBe('test-process');
       });
 
-      const req = httpMock.expectOne('/api/processes/test-process');
+      const req = httpMock.expectOne(`${baseUrl}/test-process`);
       expect(req.request.method).toBe('GET');
       req.flush(mockProcess);
     });
@@ -80,7 +82,7 @@ describe('ProcessesService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/api/processes/non-existent');
+      const req = httpMock.expectOne(`${baseUrl}/non-existent`);
       req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     });
   });
@@ -93,7 +95,7 @@ describe('ProcessesService', () => {
         expect(process).toEqual(newProcess);
       });
 
-      const req = httpMock.expectOne('/api/processes');
+      const req = httpMock.expectOne(baseUrl);
       expect(req.request.method).toBe('POST');
       req.flush(newProcess);
     });
@@ -107,7 +109,7 @@ describe('ProcessesService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/api/processes');
+      const req = httpMock.expectOne(baseUrl);
       req.flush({ message: 'Validation failed' }, { status: 400, statusText: 'Bad Request' });
     });
   });
@@ -120,7 +122,7 @@ describe('ProcessesService', () => {
         expect(process.name).toBe('Updated Name');
       });
 
-      const req = httpMock.expectOne('/api/processes/test-process');
+      const req = httpMock.expectOne(`${baseUrl}/test-process`);
       expect(req.request.method).toBe('PUT');
       req.flush(updatedProcess);
     });
@@ -129,10 +131,10 @@ describe('ProcessesService', () => {
   describe('delete', () => {
     it('should delete a process', () => {
       service.delete('test-process').subscribe(response => {
-        expect(response).toBeUndefined();
+        expect(response).toBeNull();
       });
 
-      const req = httpMock.expectOne('/api/processes/test-process');
+      const req = httpMock.expectOne(`${baseUrl}/test-process`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -144,7 +146,7 @@ describe('ProcessesService', () => {
         }
       });
 
-      const req = httpMock.expectOne('/api/processes/non-existent');
+      const req = httpMock.expectOne(`${baseUrl}/non-existent`);
       req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
     });
   });

@@ -12,6 +12,10 @@ export interface ConnectorDto {
   enabled?: boolean;
   createdAt?: string | null;
   updatedAt?: string | null;
+  // API Token (write-only): usado apenas em requests create/update
+  apiToken?: string | null;
+  // hasApiToken (read-only): indica se existe token configurado
+  hasApiToken?: boolean;
 }
 
 /**

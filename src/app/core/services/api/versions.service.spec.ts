@@ -2,10 +2,12 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { VersionsService } from './versions.service';
 import { ProcessVersionDto } from '../../../shared/models/process-version.model';
+import { environment } from '../../../../environments/environment';
 
 describe('VersionsService', () => {
   let service: VersionsService;
   let httpMock: HttpTestingController;
+  const baseUrl = `${environment.apiBaseUrl}/processes`;
 
   const mockVersion: ProcessVersionDto = {
     processId: 'test-process',
@@ -48,7 +50,7 @@ describe('VersionsService', () => {
         expect(versions.length).toBe(1);
       });
 
-      const req = httpMock.expectOne('/api/processes/test-process/versions');
+      const req = httpMock.expectOne(`${baseUrl}/test-process/versions`);
       expect(req.request.method).toBe('GET');
       req.flush(mockVersions);
     });
@@ -61,7 +63,7 @@ describe('VersionsService', () => {
         expect(version.version).toBe(1);
       });
 
-      const req = httpMock.expectOne('/api/processes/test-process/versions/1');
+      const req = httpMock.expectOne(`${baseUrl}/test-process/versions/1`);
       expect(req.request.method).toBe('GET');
       req.flush(mockVersion);
     });
@@ -75,7 +77,7 @@ describe('VersionsService', () => {
         expect(version).toEqual(newVersion);
       });
 
-      const req = httpMock.expectOne('/api/processes/test-process/versions');
+      const req = httpMock.expectOne(`${baseUrl}/test-process/versions`);
       expect(req.request.method).toBe('POST');
       req.flush(newVersion);
     });
@@ -89,7 +91,7 @@ describe('VersionsService', () => {
         expect(version.enabled).toBe(false);
       });
 
-      const req = httpMock.expectOne('/api/processes/test-process/versions/1');
+      const req = httpMock.expectOne(`${baseUrl}/test-process/versions/1`);
       expect(req.request.method).toBe('PUT');
       req.flush(updatedVersion);
     });
@@ -98,10 +100,10 @@ describe('VersionsService', () => {
   describe('delete', () => {
     it('should delete a version', () => {
       service.delete('test-process', 1).subscribe(response => {
-        expect(response).toBeUndefined();
+        expect(response).toBeNull();
       });
 
-      const req = httpMock.expectOne('/api/processes/test-process/versions/1');
+      const req = httpMock.expectOne(`${baseUrl}/test-process/versions/1`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });

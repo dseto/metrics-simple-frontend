@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'http://localhost:8080/api/v1',
-  aiEnabled: true
+  apiBaseUrl: 'https://api.metrics-simple.com/api/v1',
+  aiEnabled: true,
+  envName: 'production'
 };

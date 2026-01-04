@@ -1,0 +1,53 @@
+# ==========================================
+# OPÇÃO 1: Dockerfile com Runtime Configuration
+# ==========================================
+# Build: docker build -t metrics-simple:latest .
+# Run: docker run -e API_BASE_URL=https://api.prod.com/api/v1 -p 80:80 metrics-simple:latest
+
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copiar package files
+COPY package*.json ./
+RUN npm ci
+
+# Copiar código fonte
+COPY . .
+
+# Build production (usa environment.prod.ts como base)
+RUN npm run build
+
+# ==========================================
+# Imagem final com Nginx
+# ==========================================
+FROM nginx:alpine
+
+# Instalar gettext para envsubst (substituição de variáveis)
+RUN apk add --no-cache gettext
+
+# Copiar arquivos buildados
+COPY --from=builder /app/dist/metrics-simple/browser /usr/share/nginx/html
+
+# Copiar template de configuração
+COPY --from=builder /app/src/assets/config.template.json /usr/share/nginx/html/assets/
+
+# Copiar entrypoint script
+COPY docker/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Copiar configuração customizada do nginx (opcional)
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+# Expor porta
+EXPOSE 80
+
+# Definir variáveis de ambiente padrão
+ENV API_BASE_URL=http://localhost:8080/api/v1 \
+    AI_ENABLED=true \
+    PRODUCTION=true \
+    ENV_NAME=docker
+
+# Usar entrypoint para injetar configurações
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
