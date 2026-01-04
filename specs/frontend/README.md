@@ -1,24 +1,26 @@
-# Frontend Specs — Delta Pack: Segurança + Auth (compatível com LocalJwt e Okta/Entra no futuro)
 
-**Data:** 2026-01-03  
-**Stack:** Angular
+# Frontend Specs (UI)
 
-Este delta pack ajusta o **Frontend** para suportar as melhorias de segurança do backend:
-- Login local (username/password) via `POST /api/auth/token` (modo `LocalJwt`)
-- Uso de **Bearer token** em todas as chamadas à API
-- Guards de rota e gating de UI por roles (`app_roles`)
-- Tratamento consistente de 401/403/429
-- Preparação para migração futura para **Okta** ou **Entra ID** (modo OIDC) com baixo impacto
+Data: 2026-01-01
 
-## Estrutura (alinhada ao padrão do delta pack original)
-- `00-vision/`
-- `02-domain/`
-- `03-interfaces/`
-- `04-execution/`
-- `05-ui/`
-- `06-storage/`
-- `07-observability/`
-- `08-ai-assist/`
-- `09-testing/`
+## Propósito
+Define **UI Material Design 3** e comportamento do cliente.
 
-Comece por: `00-vision/security-auth-delta-frontend.md`
+## Referências obrigatórias
+- Contratos canônicos em `../shared/`.
+- UI deve implementar conforme `11-ui/` e consumir a API conforme OpenAPI shared.
+
+## Conteúdo típico
+- UI: `11-ui/`
+- Testes UI: `09-testing/`
+
+
+## Hardened frontend stability artifacts
+- Design tokens concretos em `design/tokens/` (cores/typografia/layout)
+- Token mapping determinístico (`design/token-mapping.md`)
+- Pages specs detalhadas (`11-ui/pages/*.md`) com layout + data binding
+- Error UX prescritivo (`11-ui/states-and-feedback.md`)
+- A11y implementável (`a11y/a11y-requirements.md` + seções em component specs)
+- Referências visuais (`visual/mockups/*`)
+
+- Field catalog por tela: `11-ui/ui-field-catalog.md`

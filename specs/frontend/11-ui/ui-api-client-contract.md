@@ -9,7 +9,7 @@ Objetivo: especificar o client HTTP da UI (tipos, normalização, erros) para re
 ## Base URL e headers
 - Base URL: `/api`
 - Header padrão: `Content-Type: application/json`
-- Header **obrigatório**: `X-Correlation-Id` (UUID gerado pelo client para rastreamento)
+- Header opcional: `X-Correlation-Id` (propagar para troubleshooting)
 
 ---
 
@@ -130,14 +130,10 @@ type ApiError = {
 ## Normalização antes de enviar (client-side)
 
 ### Strings
-	Aplicar `trim()` em **todos** os campos de string antes de enviar para a API:
-	- `id`, `name`, `description`, `connectorId`, `baseUrl`, `authRef`, `path`, `tags[]`
-	
-	Rejeitar string vazia após trim para campos obrigatórios.
-	
-	### Key-Value Maps (headers, queryParams)
-	- Remover entradas onde a chave é vazia após `trim()`.
-	- Aplicar `trim()` nas chaves e valores restantes.
+Aplicar `trim()` em:
+- `id`, `name`, `connectorId`, `baseUrl`, `authRef`, `path`
+
+Rejeitar string vazia após trim para campos obrigatórios.
 
 ### sampleInput
 - A UI pode manter `sampleInputText` como texto (textarea).

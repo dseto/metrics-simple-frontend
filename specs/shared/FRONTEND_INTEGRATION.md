@@ -1,13 +1,14 @@
 # OpenAPI Spec - Frontend Integration Guide
 
 **Data:** 2026-01-03  
-**Spec Location:** `specs/shared/openapi/config-api.yaml`  
-**API Version:** v1.1.0
+**Spec Location (Source of Truth):** `specs/shared/openapi/config-api.swagger.json`  
+**Spec Deck Version:** 1.1.3
 
 ## 📋 Overview
 
 A especificação OpenAPI define contrato completo da API Metrics Simple, incluindo:
-- Todos os endpoints de negócio (`/api/v1/*`)
+- Endpoints versionados de negócio (`/api/v1/*`)
+- Endpoints sem versionamento **explicitamente aceitos** (`/api/auth/*`, `/api/admin/auth/*`, `/api/health`)
 - Esquemas JSON completos
 - Políticas de autenticação
 - Tratamento de erros
@@ -16,12 +17,12 @@ A especificação OpenAPI define contrato completo da API Metrics Simple, inclui
 ## 🔗 Base URL
 
 ```
-http://localhost:8080/api/v1
+http://localhost:8080
 ```
 
 **Em Produção:**
 ```
-https://api.metrics-simple.example.com/api/v1
+https://api.metrics-simple.example.com
 ```
 
 ## 🔐 Autenticação
@@ -56,38 +57,48 @@ securitySchemes:
     bearerFormat: JWT
 ```
 
-**Aplicável a todos endpoints exceto:**
+**Aplicável a todos endpoints exceto (no contrato):**
+- `POST /api/auth/token` (sem auth)
 - `GET /api/health` (sem auth)
 
 ## 📊 Endpoints Disponíveis
 
 ### Connectors
 ```
-GET    /connectors              (Reader)
-POST   /connectors              (Admin)
-GET    /connectors/{id}         (Reader)
-PUT    /connectors/{id}         (Admin)
-DELETE /connectors/{id}         (Admin)
+GET    /api/v1/connectors              (Reader)
+POST   /api/v1/connectors              (Admin)
 ```
 
 ### Processes
 ```
-GET    /processes                        (Reader)
-POST   /processes                        (Admin)
-GET    /processes/{id}                   (Reader)
-PUT    /processes/{id}                   (Admin)
-DELETE /processes/{id}                   (Admin)
-GET    /processes/{id}/versions          (Reader)
-POST   /processes/{id}/versions          (Admin)
-GET    /processes/{id}/versions/{v}      (Reader)
-PUT    /processes/{id}/versions/{v}      (Admin)
-DELETE /processes/{id}/versions/{v}      (Admin)
+GET    /api/v1/processes                              (Reader)
+POST   /api/v1/processes                              (Admin)
+GET    /api/v1/processes/{id}                         (Reader)
+PUT    /api/v1/processes/{id}                         (Admin)
+DELETE /api/v1/processes/{id}                         (Admin)
+POST   /api/v1/processes/{processId}/versions          (Admin)
+GET    /api/v1/processes/{processId}/versions/{version} (Reader)
+PUT    /api/v1/processes/{processId}/versions/{version} (Admin)
 ```
 
 ### Design-Time Operations
 ```
-POST   /preview/transform    (Reader)  - Preview transformation
-POST   /ai/dsl/generate      (Reader)  - AI-assisted DSL generation
+POST   /api/v1/preview/transform    (Reader)  - Preview transformation
+POST   /api/v1/ai/dsl/generate      (Reader)  - AI-assisted DSL generation
+```
+
+### Auth (Exceção sem versionamento)
+```
+POST   /api/auth/token
+GET    /api/auth/me
+```
+
+### Admin - Auth (Exceção sem versionamento)
+```
+POST   /api/admin/auth/users
+GET    /api/admin/auth/users/{userId}
+PUT    /api/admin/auth/users/{userId}
+PUT    /api/admin/auth/users/{userId}/password
 ```
 
 ## 📦 Integração no Frontend
@@ -97,7 +108,7 @@ POST   /ai/dsl/generate      (Reader)  - AI-assisted DSL generation
 ```bash
 # Gerar cliente TypeScript/Axios
 openapi-generator-cli generate \
-  -i specs/shared/openapi/config-api.yaml \
+  -i specs/shared/openapi/config-api.swagger.json \
   -g typescript-axios \
   -o src/api-client \
   -p apiPackage=api
@@ -111,7 +122,7 @@ Resultado: Cliente totalmente tipado com Axios
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/api/v1',
+  baseURL: 'http://localhost:8080',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'

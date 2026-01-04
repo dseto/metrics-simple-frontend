@@ -40,12 +40,12 @@ type PageState =
 
 | Route | Page | Fonte de dados | Ação principal |
 |------|------|-----------------|----------------|
-| /dashboard | Dashboard | GET /api/processes | navegar |
-| /processes | ProcessesList | GET /api/processes | Create |
-| /processes/:processId | ProcessEditor | GET/PUT/DELETE /api/processes/{id} | Save |
-| /processes/:processId/versions/:version | VersionEditor | GET/PUT /api/processes/{id}/versions/{v} | Save |
-| /connectors | Connectors | GET/POST /api/connectors | Create |
-| /preview | PreviewTransform | POST /api/preview/transform | Run Preview |
+| /dashboard | Dashboard | GET /api/v1/processes | navegar |
+| /processes | ProcessesList | GET /api/v1/processes | Create |
+| /processes/:processId | ProcessEditor | GET/PUT/DELETE /api/v1/processes/{id} | Save |
+| /processes/:processId/versions/:version | VersionEditor | GET/PUT /api/v1/processes/{id}/versions/{v} | Save |
+| /connectors | Connectors | GET/POST /api/v1/connectors | Create |
+| /preview | PreviewTransform | POST /api/v1/preview/transform | Run Preview |
 | /runner | RunnerHelp | static | copiar comandos |
 
 > Observação: criação de version pode ser feita via dialog no ProcessEditor e depois navegar para VersionEditor.

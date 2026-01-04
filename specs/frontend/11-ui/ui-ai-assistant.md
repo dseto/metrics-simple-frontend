@@ -20,7 +20,7 @@ Tela **Process Version Editor** (ou modal) com aba/painel: **AI Assistant**.
 2) Usuário escreve `goalText`  
 3) Seleciona `dslProfile` (default `jsonata`)  
 4) Clica **Generate**  
-5) UI chama `POST /api/ai/dsl/generate`  
+5) UI chama `POST /api/v1/ai/dsl/generate`  
 6) UI exibe:
    - DSL sugerida (read-only com botão "Copy")
    - Schema sugerido (read-only)

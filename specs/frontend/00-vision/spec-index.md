@@ -1,8 +1,9 @@
 # Frontend Spec Index
 
 ## Shared contracts (read-only)
-- OpenAPI: `../shared/openapi/config-api.yaml`
-- Schemas: `../shared/domain/schemas/*.schema.json`
+- OpenAPI (source of truth): `../../shared/openapi/config-api.swagger.json`
+- OpenAPI (YAML mirror): `../../shared/openapi/config-api.yaml`
+- Schemas: `../../shared/domain/schemas/*.schema.json`
 
 ## UI
 - UI specs: `11-ui/`

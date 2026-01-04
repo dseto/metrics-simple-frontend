@@ -3,7 +3,8 @@
 
 A UI deve consumir contratos canônicos em:
 
-- OpenAPI: `../../shared/openapi/config-api.yaml`
+- OpenAPI (source of truth): `../../shared/openapi/config-api.swagger.json`
+- OpenAPI (YAML mirror): `../../shared/openapi/config-api.yaml`
 - Schemas: `../../shared/domain/schemas/*.schema.json`
 
 Regras:

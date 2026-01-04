@@ -8,7 +8,7 @@
   - preview falha
 
 ## Integration tests (API)
-- `POST /api/ai/dsl/generate` 200 quando habilitado + provider ok
+- `POST /api/v1/ai/dsl/generate` 200 quando habilitado + provider ok
 - 503 `AI_DISABLED` quando desabilitado
 - 503 `AI_OUTPUT_INVALID` quando provider retorna output ruim
 

@@ -14,9 +14,8 @@ Consolidar requisitos de acessibilidade (WCAG 2.1 AA) e transformar em regras im
    - `aria-describedby` apontando para mensagens de erro
 4) **Dialog**:
    - focus trap
-   - ESC fecha (quando permitid17	   - retorno de foco para o trigger
-	   - **A11y**: Botões de ícone (ex: delete, menu de ações) devem ter `aria-label` descritivo.
-	   - **Focus Management**: Após fechar um diálogo de criação/edição, o foco deve retornar para o item que o disparou (ex: botão "New Process").
+   - ESC fecha (quando permitido)
+   - retorno de foco para o trigger
 5) **Tabela**:
    - headers com `scope="col"`
    - sorting com `aria-sort`

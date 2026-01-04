@@ -67,9 +67,9 @@ Para viabilizar testes E2E repetíveis, **API e Runner** devem suportar estas co
 - Sobe API com WebApplicationFactory
 - Usa SQLite (arquivo temporário via `METRICS_SQLITE_PATH`)
 - Executa:
-  - POST `/api/connectors`
-  - POST `/api/processes`
-  - POST `/api/processes/{id}/versions`
+  - POST `/api/v1/connectors`
+  - POST `/api/v1/processes`
+  - POST `/api/v1/processes/{id}/versions`
   - GET para validar leitura
 - Valida:
   - status codes corretos

@@ -30,14 +30,13 @@ Todo componente “data-driven” deve suportar:
 ### UiError
 ```ts
 type UiError = {
-	  title: string;           // curto, ex.: "Falha ao salvar"
-	  message: string;         // explicação legível
-	  code?: string;           // opcional (HTTP_500, NETWORK_TIMEOUT, etc)
-	  details?: string;        // texto para copiar (stack/response)
-	  requestId?: string;      // se API retornar
-	  canRetry?: boolean;      // default true
-	  severity?: 'error'|'warning'; // default 'error'
-	};
+  title: string;           // curto, ex.: "Falha ao salvar"
+  message: string;         // explicação legível
+  code?: string;           // opcional (HTTP_500, NETWORK_TIMEOUT, etc)
+  details?: string;        // texto para copiar (stack/response)
+  requestId?: string;      // se API retornar
+  canRetry?: boolean;      // default true
+};
 ```
 
 ### JSON Editors
@@ -112,15 +111,12 @@ type ActionButton = {
 ## 2) Data / Lists
 
 ### 2.1 MsStatusChip
-	**Props**
-	- `status: 'Draft'|'Active'|'Disabled'`
-	- `size?: 'sm'|'md'` (default md)
-	
-	**Rendering**
-	- Usa Material Chip com cor tonal consistente (não hardcode de cor: usar theme roles)
-	- **A11y**: `data-testid="status-chip.<status.toLowerCase()>"`.
-	
-	---
+**Props**
+- `status: 'Draft'|'Active'|'Disabled'`
+- `size?: 'sm'|'md'` (default md)
+
+**Rendering**
+- Usa Material Chip com cor tonal consistente (não hardcode de cor: usar theme roles)
 
 ---
 
@@ -355,22 +351,14 @@ type PreviewPrefill = {
 ## 5) Feedback
 
 ### 5.1 MsErrorBanner
-	**Props**
-	- `error: UiError`
-	- `visible: boolean`
-	
-	**Events**
-	- `onRetry?()`
-	- `onCopyDetails()`
-	- `onDismiss()`
-	
-	**UX**
-	- O banner deve usar cores de severidade (vermelho para erro, amarelo para warning).
-	- O ícone deve ser `error` (vermelho) ou `warning` (amarelo).
-	- O botão de retry só deve ser exibido se `error.canRetry` for `true`.
-	- **A11y**: `aria-live="assertive"` para garantir que o erro seja lido por leitores de tela.
-	
-	---
+**Props**
+- `error: UiError`
+- `visible: boolean`
+
+**Events**
+- `onRetry?()`
+- `onCopyDetails()`
+- `onDismiss()`
 
 ---
 
@@ -396,31 +384,31 @@ Cada página deve ser implementada como “container” que:
 
 ### 6.1 DashboardContainer
 **Data**
-- GET /api/processes
+- GET /api/v1/processes
 
 **Derived**
 - totals: total/active/disabled
 - recent: top 10 por ordem alfabética (ou por updatedAt quando existir)
 
 ### 6.2 ProcessesContainer
-- GET /api/processes
-- Delete: DELETE /api/processes/{id}
+- GET /api/v1/processes
+- Delete: DELETE /api/v1/processes/{id}
 
 ### 6.3 ProcessEditorContainer
-- create: POST /api/processes
-- edit: GET+PUT /api/processes/{id}
+- create: POST /api/v1/processes
+- edit: GET+PUT /api/v1/processes/{id}
 - versions list: (opcional) se API não expuser list, pode ser “known versions” via chamadas diretas quando houver
 
 ### 6.4 VersionEditorContainer
-- create: POST /api/processes/{id}/versions
-- edit: GET+PUT /api/processes/{id}/versions/{version}
+- create: POST /api/v1/processes/{id}/versions
+- edit: GET+PUT /api/v1/processes/{id}/versions/{version}
 
 ### 6.5 PreviewContainer
-- POST /api/preview/transform
+- POST /api/v1/preview/transform
 
 ### 6.6 ConnectorsContainer
-- list: GET /api/connectors
-- create: POST /api/connectors
+- list: GET /api/v1/connectors
+- create: POST /api/v1/connectors
 
 ---
 
