@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { SkeletonListComponent } from '../../../shared/components/skeleton-list/skeleton-list.component';
@@ -34,6 +35,7 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
     MatIconModule,
     MatMenuModule,
     MatDividerModule,
+    MatTooltipModule,
     PageHeaderComponent,
     SkeletonListComponent,
     EmptyStateComponent,
@@ -94,10 +96,12 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
             </td>
           </ng-container>
 
-          <ng-container matColumnDef="authRef">
-            <th mat-header-cell *matHeaderCellDef>Auth Ref</th>
+          <ng-container matColumnDef="authType">
+            <th mat-header-cell *matHeaderCellDef>Auth Type</th>
             <td mat-cell *matCellDef="let connector">
-              <code>{{ connector.authRef }}</code>
+              <span class="auth-type-badge" [attr.data-auth-type]="connector.authType || 'NONE'">
+                {{ connector.authType || 'NONE' }}
+              </span>
             </td>
           </ng-container>
 
@@ -108,15 +112,23 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
             </td>
           </ng-container>
 
-          <ng-container matColumnDef="token">
-            <th mat-header-cell *matHeaderCellDef>API Token</th>
+          <ng-container matColumnDef="secrets">
+            <th mat-header-cell *matHeaderCellDef>Secrets</th>
             <td mat-cell *matCellDef="let connector">
-              <span class="token-indicator" [class.configured]="connector.hasApiToken">
-                <mat-icon class="token-icon">
-                  {{ connector.hasApiToken ? 'check_circle' : 'radio_button_unchecked' }}
-                </mat-icon>
-                {{ connector.hasApiToken ? 'Configurado' : 'Não configurado' }}
-              </span>
+              <div class="secrets-indicators">
+                <span *ngIf="connector.hasApiToken" class="secret-indicator configured" matTooltip="Token configurado">
+                  <mat-icon class="secret-icon">vpn_key</mat-icon>
+                </span>
+                <span *ngIf="connector.hasApiKey" class="secret-indicator configured" matTooltip="API Key configurada">
+                  <mat-icon class="secret-icon">key</mat-icon>
+                </span>
+                <span *ngIf="connector.hasBasicPassword" class="secret-indicator configured" matTooltip="Senha configurada">
+                  <mat-icon class="secret-icon">password</mat-icon>
+                </span>
+                <span *ngIf="!connector.hasApiToken && !connector.hasApiKey && !connector.hasBasicPassword" class="secret-indicator none">
+                  —
+                </span>
+              </div>
             </td>
           </ng-container>
 
@@ -201,19 +213,40 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
       color: #155724;
     }
 
-    .token-indicator {
+    .auth-type-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #E3F2FD;
+      color: #1565C0;
+    }
+
+    .auth-type-badge[data-auth-type="NONE"] {
+      background: #F5F5F5;
+      color: #757575;
+    }
+
+    .secrets-indicators {
       display: flex;
       align-items: center;
       gap: 4px;
-      font-size: 14px;
-      color: var(--mat-sys-on-surface-variant);
     }
 
-    .token-indicator.configured {
+    .secret-indicator {
+      display: flex;
+      align-items: center;
+    }
+
+    .secret-indicator.configured {
       color: var(--mat-sys-primary);
     }
 
-    .token-icon {
+    .secret-indicator.none {
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .secret-icon {
       font-size: 18px;
       width: 18px;
       height: 18px;
@@ -231,7 +264,7 @@ export class ConnectorsListComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
 
   connectors: ConnectorDto[] = [];
-  displayedColumns = ['name', 'baseUrl', 'authRef', 'timeout', 'token', 'status', 'actions'];
+  displayedColumns = ['name', 'baseUrl', 'authType', 'timeout', 'secrets', 'status', 'actions'];
   state: PageState = { kind: 'idle' };
 
   ngOnInit(): void {
@@ -313,8 +346,13 @@ export class ConnectorsListComponent implements OnInit {
         this.loadData();
       },
       error: (error) => {
-        const uiError = this.errorHandler.handleHttpError(error);
-        this.errorHandler.showError(uiError);
+        // Handle 409 Conflict (connector in use)
+        if (error.status === 409) {
+          this.snackbar.error('Conector em uso por processos; remova referências antes.');
+        } else {
+          const uiError = this.errorHandler.handleHttpError(error);
+          this.errorHandler.showError(uiError);
+        }
       }
     });
   }

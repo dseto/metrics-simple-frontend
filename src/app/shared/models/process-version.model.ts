@@ -1,6 +1,7 @@
 /**
  * ProcessVersion Model - MetricsSimple
  * Derivado de: specs/shared/domain/schemas/processVersion.schema.json
+ * Delta 1.2.0: body + contentType no SourceRequest
  */
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -11,6 +12,10 @@ export interface SourceRequestDto {
   path: string;
   headers?: Record<string, string> | null;
   queryParams?: Record<string, string> | null;
+  /** Request body (JSON ou string) para métodos POST/PUT */
+  body?: any;
+  /** Content-Type override (ex.: application/json) */
+  contentType?: string;
 }
 
 export interface DslDto {

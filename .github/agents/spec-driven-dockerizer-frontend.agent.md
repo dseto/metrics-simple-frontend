@@ -150,6 +150,18 @@ BUILD OPTIMIZATION:
 - Cache npm layer separately from src files to enable build optimization
 - Use .dockerignore to exclude node_modules, dist, etc.
 
+DOCKER REGISTRY & PUBLISH (OPTIONAL - DO NOT PUSH UNLESS INSTRUCTED):
+- Do NOT attempt docker push without explicit instruction
+- Do NOT prompt user for Docker Hub credentials
+- Do NOT check docker info or docker login status
+- If user requests push:
+  - REQUIRE explicit Docker Hub username/repository (e.g., user/metrics-simple-frontend)
+  - REQUIRE user to be pre-authenticated (user must run: docker login)
+  - Tag image: docker tag metrics-simple-frontend-angular-frontend:latest {username}/{repository}:latest
+  - Push only after user confirms repository and authentication details
+  - Document exact push command to be executed by user
+- Local-only mode (default): Image stored in local Docker Desktop (no push needed)
+
 VALIDATION COMMANDS (must work after generation):
 1. docker compose build
 2. docker compose up -d
@@ -183,6 +195,8 @@ SCRIPTS & DOCUMENTATION:
 - Create scripts/docker-up.ps1 and scripts/docker-up.sh for startup
 - Create scripts/docker-health.ps1 and scripts/docker-health.sh for monitoring
 - Document all environment variables in .env.example
+ - When performing a local publish on Windows hosts, invoke the PowerShell helper `scripts/docker-up.ps1` rather than issuing Compose commands directly; the agent should call this script to build, remove, and start only the `angular-frontend` service.
+ - Agents MUST NOT perform `docker push` or attempt to log in; any push requires explicit user confirmation and credentials.
 
 OUTPUT FORMAT:
 Return ONLY raw file contents, in this exact order:

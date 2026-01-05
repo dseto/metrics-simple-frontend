@@ -28,6 +28,14 @@ Documentação de deploy, Docker e infraestrutura.
 - Issues conhecidas
 - Ideal para: QA e troubleshooting
 
+### 🚢 [DOCKER-PUBLISH-COMMANDS.md](DOCKER-PUBLISH-COMMANDS.md)
+**Comandos exatos para publicar no Docker Desktop**
+- Comandos prontos para copy-paste
+- Build, container start, healthcheck
+- Como evitar confusão com Docker Hub
+- Script completo em uma única execução
+- Ideal para: usar em outras sessões
+
 ---
 
 ## 🎯 Fluxo de Deploy

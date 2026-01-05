@@ -161,6 +161,28 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
               (onChange)="onQueryParamsChange($event)"
               testId="version-editor.queryParams">
             </ms-key-value-editor>
+
+            <!-- Body (for POST/PUT) -->
+            <div *ngIf="showBodyField()" class="body-section">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Content-Type</mat-label>
+                <input
+                  matInput
+                  formControlName="contentType"
+                  placeholder="application/json"
+                  data-testid="version-editor.contentType">
+                <mat-hint>Tipo de conteúdo do body (ex.: application/json)</mat-hint>
+              </mat-form-field>
+
+              <ms-json-editor-lite
+                title="Request Body (JSON)"
+                [valueText]="bodyText"
+                mode="json"
+                [height]="150"
+                (onChange)="onBodyChange($event)"
+                testId="version-editor.body">
+              </ms-json-editor-lite>
+            </div>
           </mat-card-content>
         </mat-card>
 
@@ -379,6 +401,16 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
       flex: 1;
     }
 
+    .body-section {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--mat-sys-surface-variant);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
     .ai-panel {
       margin-bottom: 0;
     }
@@ -506,6 +538,7 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
   dslText = '';
   outputSchemaText = '{}';
   sampleInputText = '';
+  bodyText = '';
 
   // KeyValue items
   headersItems: KeyValueItem[] = [];
@@ -601,6 +634,18 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
     this.state = { kind: 'saving', dirty: true };
     const formValue = this.form.getRawValue();
 
+    // Parse body if present
+    let body = undefined;
+    if (this.bodyText.trim()) {
+      const bodyResult = safeJsonParse(this.bodyText);
+      if (bodyResult.success) {
+        body = bodyResult.data;
+      } else {
+        // Send as string if not valid JSON
+        body = this.bodyText.trim();
+      }
+    }
+
     const dto: ProcessVersionDto = {
       processId: this.processId,
       version: formValue.version,
@@ -609,7 +654,9 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
         method: formValue.sourceRequest.method,
         path: formValue.sourceRequest.path,
         headers: keyValueArrayToRecord(this.headersItems),
-        queryParams: keyValueArrayToRecord(this.queryParamsItems)
+        queryParams: keyValueArrayToRecord(this.queryParamsItems),
+        body: body,
+        contentType: formValue.sourceRequest.contentType?.trim() || undefined
       },
       dsl: {
         profile: formValue.dsl.profile,
@@ -675,6 +722,17 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
   onQueryParamsChange(items: KeyValueItem[]): void {
     this.queryParamsItems = items;
     this.isDirty = true;
+  }
+
+  // Body handlers
+  onBodyChange(value: string): void {
+    this.bodyText = value;
+    this.isDirty = true;
+  }
+
+  showBodyField(): boolean {
+    const method = this.form.get('sourceRequest.method')?.value;
+    return method === 'POST' || method === 'PUT';
   }
 
   // AI Assistant
@@ -789,7 +847,8 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
       enabled: [true],
       sourceRequest: this.fb.group({
         method: ['GET', Validators.required],
-        path: ['', Validators.required]
+        path: ['', Validators.required],
+        contentType: ['']
       }),
       dsl: this.fb.group({
         profile: ['jsonata', Validators.required]
@@ -803,7 +862,8 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
       enabled: version.enabled,
       sourceRequest: {
         method: version.sourceRequest.method,
-        path: version.sourceRequest.path
+        path: version.sourceRequest.path,
+        contentType: version.sourceRequest.contentType || ''
       },
       dsl: {
         profile: version.dsl.profile
@@ -817,6 +877,15 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
     this.dslText = version.dsl.text;
     this.outputSchemaText = formatJson(version.outputSchema);
     this.sampleInputText = version.sampleInput ? formatJson(version.sampleInput) : '';
+
+    // Set body text
+    if (version.sourceRequest.body !== undefined && version.sourceRequest.body !== null) {
+      this.bodyText = typeof version.sourceRequest.body === 'string'
+        ? version.sourceRequest.body
+        : formatJson(version.sourceRequest.body);
+    } else {
+      this.bodyText = '';
+    }
 
     // Set KeyValue items
     this.headersItems = recordToKeyValueArray(version.sourceRequest.headers);

@@ -2,11 +2,12 @@
  * Normalizers - MetricsSimple
  * Normalização de dados antes de enviar para API
  * Conforme ui-api-client-contract.md
+ * Delta 1.2.0: authType, secrets *Specified, requestDefaults, body+contentType
  */
 
 import { ProcessDto, OutputDestination } from '../models/process.model';
 import { ProcessVersionDto, SourceRequestDto } from '../models/process-version.model';
-import { ConnectorDto } from '../models/connector.model';
+import { ConnectorDto, RequestDefaults } from '../models/connector.model';
 
 /**
  * Normaliza string (trim)
@@ -70,14 +71,30 @@ export function normalizeProcessVersion(dto: ProcessVersionDto): ProcessVersionD
 
 /**
  * Normaliza SourceRequest
+ * Delta 1.2.0: inclui body e contentType
  */
 export function normalizeSourceRequest(req: SourceRequestDto): SourceRequestDto {
-  return {
+  const normalized: SourceRequestDto = {
     method: req.method,
     path: normalizeString(req.path),
     headers: normalizeKeyValueMap(req.headers),
     queryParams: normalizeKeyValueMap(req.queryParams)
   };
+
+  // Body: enviar se definido (null remove, undefined omite)
+  if (req.body !== undefined) {
+    normalized.body = req.body;
+  }
+
+  // ContentType: enviar se definido e não vazio
+  if (req.contentType !== undefined) {
+    const trimmed = req.contentType?.trim();
+    if (trimmed && trimmed.length > 0) {
+      normalized.contentType = trimmed;
+    }
+  }
+
+  return normalized;
 }
 
 /**
@@ -105,41 +122,119 @@ export function normalizeKeyValueMap(
 /**
  * Normaliza Connector antes de enviar para API
  * 
- * Semântica apiToken:
- * - Se presente e string => trim e enviar
- * - Se null => enviar null (remove token)
- * - Se undefined/omitido => não enviar (mantém token no backend)
+ * Delta 1.2.0: authType, secrets (*Specified), requestDefaults
+ * 
+ * Semântica de secrets (apiToken, apiKeyValue, basicPassword):
+ * - Se *Specified=true e valor=string => substituir
+ * - Se *Specified=true e valor=null => remover
+ * - Se *Specified ausente/false => manter (não enviar)
  */
 export function normalizeConnector(dto: ConnectorDto): ConnectorDto {
   const normalized: ConnectorDto = {
-    ...dto,
     id: normalizeString(dto.id),
     name: normalizeString(dto.name),
     baseUrl: normalizeString(dto.baseUrl),
-    authRef: normalizeString(dto.authRef)
+    timeoutSeconds: dto.timeoutSeconds,
+    enabled: dto.enabled,
+    authType: dto.authType || 'NONE'
   };
 
-  // Processa apiToken conforme semântica
-  if ('apiToken' in dto) {
+  // Campos específicos por authType
+  if (dto.authType === 'API_KEY') {
+    if (dto.apiKeyLocation) normalized.apiKeyLocation = dto.apiKeyLocation;
+    if (dto.apiKeyName) normalized.apiKeyName = normalizeString(dto.apiKeyName);
+  }
+
+  if (dto.authType === 'BASIC') {
+    if (dto.basicUsername !== undefined) normalized.basicUsername = normalizeString(dto.basicUsername);
+  }
+
+  // Processa apiToken conforme semântica *Specified
+  if (dto.apiTokenSpecified) {
+    normalized.apiTokenSpecified = true;
     if (dto.apiToken === null) {
-      // Explicitamente null => remover token
       normalized.apiToken = null;
     } else if (typeof dto.apiToken === 'string') {
       const trimmed = dto.apiToken.trim();
-      if (trimmed.length > 0) {
-        // String não vazia => substituir token
-        normalized.apiToken = trimmed;
-      } else {
-        // String vazia => omitir (não enviar)
-        delete normalized.apiToken;
-      }
+      normalized.apiToken = trimmed.length > 0 ? trimmed : null;
     }
   }
 
-  // Remove hasApiToken (read-only, nunca enviar)
+  // Processa apiKeyValue conforme semântica *Specified
+  if (dto.apiKeySpecified) {
+    normalized.apiKeySpecified = true;
+    if (dto.apiKeyValue === null) {
+      normalized.apiKeyValue = null;
+    } else if (typeof dto.apiKeyValue === 'string') {
+      const trimmed = dto.apiKeyValue.trim();
+      normalized.apiKeyValue = trimmed.length > 0 ? trimmed : null;
+    }
+  }
+
+  // Processa basicPassword conforme semântica *Specified
+  if (dto.basicPasswordSpecified) {
+    normalized.basicPasswordSpecified = true;
+    if (dto.basicPassword === null) {
+      normalized.basicPassword = null;
+    } else if (typeof dto.basicPassword === 'string') {
+      const trimmed = dto.basicPassword.trim();
+      normalized.basicPassword = trimmed.length > 0 ? trimmed : null;
+    }
+  }
+
+  // Processa requestDefaults
+  if (dto.requestDefaults) {
+    normalized.requestDefaults = normalizeRequestDefaults(dto.requestDefaults);
+  }
+
+  // Remove campos read-only (nunca enviar)
   delete normalized.hasApiToken;
+  delete normalized.hasApiKey;
+  delete normalized.hasBasicPassword;
+  delete normalized.createdAt;
+  delete normalized.updatedAt;
 
   return normalized;
+}
+
+/**
+ * Normaliza RequestDefaults
+ */
+export function normalizeRequestDefaults(defaults: RequestDefaults): RequestDefaults | undefined {
+  const normalized: RequestDefaults = {};
+  let hasContent = false;
+
+  if (defaults.method) {
+    normalized.method = defaults.method;
+    hasContent = true;
+  }
+
+  const headers = normalizeKeyValueMap(defaults.headers);
+  if (headers) {
+    normalized.headers = headers;
+    hasContent = true;
+  }
+
+  const queryParams = normalizeKeyValueMap(defaults.queryParams);
+  if (queryParams) {
+    normalized.queryParams = queryParams;
+    hasContent = true;
+  }
+
+  if (defaults.body !== undefined && defaults.body !== null && defaults.body !== '') {
+    normalized.body = defaults.body;
+    hasContent = true;
+  }
+
+  if (defaults.contentType) {
+    const trimmed = defaults.contentType.trim();
+    if (trimmed.length > 0) {
+      normalized.contentType = trimmed;
+      hasContent = true;
+    }
+  }
+
+  return hasContent ? normalized : undefined;
 }
 
 /**

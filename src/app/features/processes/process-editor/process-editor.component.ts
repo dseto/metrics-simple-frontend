@@ -12,6 +12,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTableModule } from '@angular/material/table';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog } from '@angular/material/dialog';
 import { PageHeaderComponent, BreadcrumbItem, ActionButton } from '../../../shared/components/page-header/page-header.component';
 import { FormFooterComponent, FooterAction } from '../../../shared/components/form-footer/form-footer.component';
@@ -51,6 +52,7 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
     MatRadioModule,
     MatExpansionModule,
     MatTableModule,
+    MatProgressSpinnerModule,
     PageHeaderComponent,
     FormFooterComponent,
     ErrorBannerComponent,
@@ -253,7 +255,23 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
             </button>
           </mat-card-header>
           <mat-card-content>
-            <table *ngIf="versions.length > 0" mat-table [dataSource]="versions" class="versions-table">
+            <!-- Loading -->
+            <div *ngIf="versionsLoading" class="versions-loading">
+              <mat-spinner diameter="24"></mat-spinner>
+              <span>Carregando versões...</span>
+            </div>
+
+            <!-- Error -->
+            <div *ngIf="versionsError && !versionsLoading" class="versions-error">
+              <mat-icon color="warn">error_outline</mat-icon>
+              <span>{{ versionsError.message }}</span>
+              <button mat-button color="primary" (click)="retryLoadVersions()" data-testid="process-editor.retryVersions">
+                Tentar novamente
+              </button>
+            </div>
+
+            <!-- Table -->
+            <table *ngIf="!versionsLoading && !versionsError && versions.length > 0" mat-table [dataSource]="versions" class="versions-table" data-testid="process-editor.versionsTable">
               <ng-container matColumnDef="version">
                 <th mat-header-cell *matHeaderCellDef>Versão</th>
                 <td mat-cell *matCellDef="let version">v{{ version.version }}</td>
@@ -274,7 +292,8 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
                   <button
                     mat-icon-button
                     [routerLink]="['/processes', processId, 'versions', version.version]"
-                    aria-label="Editar versão">
+                    aria-label="Editar versão"
+                    [attr.data-testid]="'process-editor.editVersion.' + version.version">
                     <mat-icon>edit</mat-icon>
                   </button>
                 </td>
@@ -284,7 +303,8 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
               <tr mat-row *matRowDef="let row; columns: versionColumns;"></tr>
             </table>
 
-            <p *ngIf="versions.length === 0" class="no-versions">
+            <!-- Empty state -->
+            <p *ngIf="!versionsLoading && !versionsError && versions.length === 0" class="no-versions" data-testid="process-editor.noVersions">
               Nenhuma versão criada ainda.
             </p>
           </mat-card-content>
@@ -389,6 +409,24 @@ import { UiError, PageState } from '../../../shared/models/api-error.model';
       text-align: center;
       padding: 24px;
     }
+
+    .versions-loading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 24px;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .versions-error {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px;
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+      border-radius: 8px;
+    }
   `]
 })
 export class ProcessEditorComponent implements OnInit, HasUnsavedChanges {
@@ -405,6 +443,8 @@ export class ProcessEditorComponent implements OnInit, HasUnsavedChanges {
   form!: FormGroup;
   connectors: ConnectorDto[] = [];
   versions: ProcessVersionDto[] = [];
+  versionsLoading = false;
+  versionsError: UiError | null = null;
   versionColumns = ['version', 'enabled', 'actions'];
 
   state: PageState = { kind: 'idle' };
@@ -478,19 +518,28 @@ export class ProcessEditorComponent implements OnInit, HasUnsavedChanges {
   private loadVersions(): void {
     if (!this.processId) return;
 
+    this.versionsLoading = true;
+    this.versionsError = null;
+
     this.versionsService.list(this.processId).subscribe({
       next: (versions) => {
-        this.versions = versions;
+        this.versions = versions.sort((a, b) => a.version - b.version);
+        this.versionsLoading = false;
         this.state = { kind: 'ready', dirty: false };
         this.isDirty = false;
       },
       error: (error) => {
-        // Versions are optional, don't block the form
-        console.warn('Failed to load versions:', error);
+        this.versionsLoading = false;
+        this.versionsError = this.errorHandler.handleHttpError(error);
+        // Continue loading the form even if versions fail
         this.state = { kind: 'ready', dirty: false };
         this.isDirty = false;
       }
     });
+  }
+
+  retryLoadVersions(): void {
+    this.loadVersions();
   }
 
   handleHeaderAction(actionId: string): void {
