@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { DslGenerateRequest, DslGenerateResult } from '../../../shared/models/ai.model';
-import { environment } from '../../../../environments/environment';
+import { RuntimeConfigService } from '../runtime-config.service';
 
 /**
  * AiService - Cliente de API para AI Assistant
@@ -12,8 +12,12 @@ import { environment } from '../../../../environments/environment';
   providedIn: 'root'
 })
 export class AiService {
-  private readonly baseUrl = `${environment.apiBaseUrl}/ai`;
   private readonly http = inject(HttpClient);
+  private readonly config = inject(RuntimeConfigService);
+  
+  private get baseUrl(): string {
+    return `${this.config.apiBaseUrl}/ai`;
+  }
 
   /**
    * Gera DSL e Output Schema usando LLM

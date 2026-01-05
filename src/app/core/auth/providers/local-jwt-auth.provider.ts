@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
 import { map, tap, catchError, switchMap } from 'rxjs/operators';
-import { environment } from '../../../../environments/environment';
+import { RuntimeConfigService } from '../../services/runtime-config.service';
 import {
   AppRole,
   AuthSession,
@@ -30,18 +30,23 @@ const STORAGE_KEYS = {
  * Endpoints usados:
  * - POST /api/auth/token (login)
  * - GET /api/auth/me (opcional, para obter roles)
+ *
+ * NOTA: Não usar providedIn: 'root' porque o provider é registrado
+ * explicitamente via { provide: AuthProvider, useClass: LocalJwtAuthProvider }
+ * em app.config.ts. Ter ambos criaria duas instâncias diferentes.
  */
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class LocalJwtAuthProvider extends AuthProvider {
   private readonly http = inject(HttpClient);
+  private readonly config = inject(RuntimeConfigService);
 
   /**
    * URL base para auth (sem versionamento conforme shared/README.md)
    * Auth endpoints: /api/auth/* (infraestrutura, não versionados)
    */
-  private readonly authBaseUrl = environment.apiBaseUrl.replace('/api/v1', '/api');
+  private get authBaseUrl(): string {
+    return this.config.apiBaseUrl.replace('/api/v1', '/api');
+  }
 
   private readonly _currentUser$ = new BehaviorSubject<AuthUser | null>(null);
   private readonly _authStateChanged$ = new BehaviorSubject<boolean>(false);

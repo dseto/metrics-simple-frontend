@@ -177,7 +177,7 @@ import { UiError, PageState } from '../../shared/models/api-error.model';
         <mat-card class="action-card" routerLink="/runner">
           <mat-card-content>
             <mat-icon>terminal</mat-icon>
-            <span>Documentação Runner</span>
+            <span>Executar Runner</span>
           </mat-card-content>
         </mat-card>
       </div>

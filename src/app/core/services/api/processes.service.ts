@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ProcessDto } from '../../../shared/models/process.model';
 import { normalizeProcess } from '../../../shared/utils/normalizers';
-import { environment } from '../../../../environments/environment';
+import { RuntimeConfigService } from '../runtime-config.service';
 
 /**
  * ProcessesService - Cliente de API para Processes
@@ -13,8 +13,12 @@ import { environment } from '../../../../environments/environment';
   providedIn: 'root'
 })
 export class ProcessesService {
-  private readonly baseUrl = `${environment.apiBaseUrl}/processes`;
   private readonly http = inject(HttpClient);
+  private readonly config = inject(RuntimeConfigService);
+  
+  private get baseUrl(): string {
+    return `${this.config.apiBaseUrl}/processes`;
+  }
 
   /**
    * Lista todos os processes

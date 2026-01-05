@@ -1,6 +1,6 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { environment } from '../../../../environments/environment';
+import { RuntimeConfigService } from '../../services/runtime-config.service';
 import { AuthProvider } from '../providers';
 
 /**
@@ -14,12 +14,15 @@ import { AuthProvider } from '../providers';
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authProvider = inject(AuthProvider);
+  const config = inject(RuntimeConfigService);
 
   // Verificar se a URL é do backend (apiBaseUrl)
   // Considera tanto /api/v1 quanto /api (auth endpoints)
-  const apiBaseWithoutVersion = environment.apiBaseUrl.replace('/api/v1', '/api');
+  // Usa RuntimeConfigService para consistência com os services
+  const apiBaseUrl = config.apiBaseUrl;
+  const apiBaseWithoutVersion = apiBaseUrl.replace('/api/v1', '/api');
   const isApiRequest =
-    req.url.startsWith(environment.apiBaseUrl) ||
+    req.url.startsWith(apiBaseUrl) ||
     req.url.startsWith(apiBaseWithoutVersion);
 
   if (!isApiRequest) {

@@ -3,7 +3,7 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { authInterceptor } from './auth.interceptor';
 import { AuthProvider } from '../providers/auth-provider.interface';
-import { environment } from '../../../../environments/environment';
+import { RuntimeConfigService } from '../../services/runtime-config.service';
 
 /**
  * Testes unitários do AuthInterceptor
@@ -18,15 +18,21 @@ describe('AuthInterceptor', () => {
   let httpClient: HttpClient;
   let httpMock: HttpTestingController;
   let mockAuthProvider: jasmine.SpyObj<AuthProvider>;
+  let mockConfigService: jasmine.SpyObj<RuntimeConfigService>;
+  const testApiBaseUrl = 'http://localhost:8080/api/v1';
 
   beforeEach(() => {
     mockAuthProvider = jasmine.createSpyObj('AuthProvider', ['getAccessToken']);
+    mockConfigService = jasmine.createSpyObj('RuntimeConfigService', [], {
+      apiBaseUrl: testApiBaseUrl
+    });
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
-        { provide: AuthProvider, useValue: mockAuthProvider }
+        { provide: AuthProvider, useValue: mockAuthProvider },
+        { provide: RuntimeConfigService, useValue: mockConfigService }
       ]
     });
 
@@ -42,9 +48,9 @@ describe('AuthInterceptor', () => {
     it('deve adicionar Bearer token para requests ao apiBaseUrl', () => {
       mockAuthProvider.getAccessToken.and.returnValue('test-token');
 
-      httpClient.get(`${environment.apiBaseUrl}/processes`).subscribe();
+      httpClient.get(`${testApiBaseUrl}/processes`).subscribe();
 
-      const req = httpMock.expectOne(`${environment.apiBaseUrl}/processes`);
+      const req = httpMock.expectOne(`${testApiBaseUrl}/processes`);
       expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
       req.flush([]);
     });
@@ -52,9 +58,9 @@ describe('AuthInterceptor', () => {
     it('não deve adicionar Authorization quando não há token', () => {
       mockAuthProvider.getAccessToken.and.returnValue(null);
 
-      httpClient.get(`${environment.apiBaseUrl}/processes`).subscribe();
+      httpClient.get(`${testApiBaseUrl}/processes`).subscribe();
 
-      const req = httpMock.expectOne(`${environment.apiBaseUrl}/processes`);
+      const req = httpMock.expectOne(`${testApiBaseUrl}/processes`);
       expect(req.request.headers.has('Authorization')).toBe(false);
       req.flush([]);
     });
@@ -71,7 +77,7 @@ describe('AuthInterceptor', () => {
 
     it('não deve adicionar Authorization para endpoint de login', () => {
       mockAuthProvider.getAccessToken.and.returnValue('test-token');
-      const authUrl = environment.apiBaseUrl.replace('/api/v1', '/api');
+      const authUrl = testApiBaseUrl.replace('/api/v1', '/api');
 
       httpClient.post(`${authUrl}/auth/token`, {}).subscribe();
 

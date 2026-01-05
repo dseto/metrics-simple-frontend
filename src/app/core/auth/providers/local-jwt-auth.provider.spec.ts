@@ -2,7 +2,7 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { LocalJwtAuthProvider } from './local-jwt-auth.provider';
-import { environment } from '../../../../environments/environment';
+import { RuntimeConfigService } from '../../services/runtime-config.service';
 
 /**
  * Testes unitários do LocalJwtAuthProvider
@@ -17,17 +17,23 @@ import { environment } from '../../../../environments/environment';
 describe('LocalJwtAuthProvider', () => {
   let provider: LocalJwtAuthProvider;
   let httpMock: HttpTestingController;
-  const authBaseUrl = environment.apiBaseUrl.replace('/api/v1', '/api');
+  const testApiBaseUrl = 'http://localhost:8080/api/v1';
+  const authBaseUrl = testApiBaseUrl.replace('/api/v1', '/api');
 
   beforeEach(() => {
     // Limpar sessionStorage antes de cada teste
     sessionStorage.clear();
 
+    const mockConfigService = jasmine.createSpyObj('RuntimeConfigService', [], {
+      apiBaseUrl: testApiBaseUrl
+    });
+
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        LocalJwtAuthProvider
+        LocalJwtAuthProvider,
+        { provide: RuntimeConfigService, useValue: mockConfigService }
       ]
     });
 
