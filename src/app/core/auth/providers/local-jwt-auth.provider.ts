@@ -15,10 +15,11 @@ import { AuthProvider } from './auth-provider.interface';
 
 /**
  * Chaves de storage conforme specs/frontend/06-storage/token-storage.md
+ * REGRA: Usar localStorage para persistir sessão em reload.
  */
 const STORAGE_KEYS = {
-  ACCESS_TOKEN: 'metrics_access_token',
-  USER: 'metrics_user'
+  ACCESS_TOKEN: 'metrics.auth.access_token',
+  USER: 'metrics.auth.user'
 } as const;
 
 /**
@@ -195,11 +196,11 @@ export class LocalJwtAuthProvider extends AuthProvider {
   }
 
   /**
-   * Obtém token do sessionStorage
+   * Obtém token do localStorage
    * Conforme specs/frontend/06-storage/token-storage.md
    */
   override getAccessToken(): string | null {
-    return sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   }
 
   /**
@@ -226,18 +227,18 @@ export class LocalJwtAuthProvider extends AuthProvider {
   }
 
   /**
-   * Salva token no sessionStorage
+   * Salva token no localStorage
    * REGRA: Nunca logar o token (specs/frontend/06-storage/token-storage.md)
    */
   private saveToken(token: string): void {
-    sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
   }
 
   /**
-   * Obtém usuário cacheado
+   * Obtém usuário cacheado do localStorage
    */
   private getCachedUser(): AuthUser | null {
-    const cached = sessionStorage.getItem(STORAGE_KEYS.USER);
+    const cached = localStorage.getItem(STORAGE_KEYS.USER);
     if (cached) {
       try {
         return JSON.parse(cached) as AuthUser;
@@ -249,17 +250,18 @@ export class LocalJwtAuthProvider extends AuthProvider {
   }
 
   /**
-   * Cacheia usuário no sessionStorage
+   * Cacheia usuário no localStorage
    */
   private cacheUser(user: AuthUser): void {
-    sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   }
 
   /**
-   * Limpa storage
+   * Limpa storage (localStorage)
+   * Conforme specs/frontend/06-storage/token-storage.md
    */
   private clearStorage(): void {
-    sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    sessionStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
   }
 }

@@ -12,6 +12,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { PageHeaderComponent, BreadcrumbItem } from '../../../shared/components/page-header/page-header.component';
 import { FormFooterComponent } from '../../../shared/components/form-footer/form-footer.component';
 import { ErrorBannerComponent } from '../../../shared/components/error-banner/error-banner.component';
@@ -26,9 +27,9 @@ import { SnackbarService } from '../../../core/services/snackbar.service';
 import { HasUnsavedChanges } from '../../../core/guards/unsaved-changes.guard';
 import { ProcessVersionDto, HttpMethod, DslProfile, createDefaultProcessVersion } from '../../../shared/models/process-version.model';
 import { PreviewTransformResponse } from '../../../shared/models/preview.model';
-import { DslGenerateRequest, DslGenerateResult, AiAssistantState, createDefaultConstraints } from '../../../shared/models/ai.model';
+import { DslGenerateRequest, DslGenerateResult, DslGenerateConstraints, AiAssistantState, createDefaultConstraints } from '../../../shared/models/ai.model';
 import { UiError, PageState } from '../../../shared/models/api-error.model';
-import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson } from '../../../shared/utils/normalizers';
+import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson, tryExtractPlan } from '../../../shared/utils/normalizers';
 
 /**
  * VersionEditor - Criar/Editar versão de processo
@@ -52,6 +53,7 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
     MatTabsModule,
     MatExpansionModule,
     MatProgressSpinnerModule,
+    MatCheckboxModule,
     PageHeaderComponent,
     FormFooterComponent,
     ErrorBannerComponent,
@@ -189,24 +191,20 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
         <!-- DSL & Schema -->
         <mat-card class="form-card">
           <mat-card-header>
-            <mat-card-title>Transformação</mat-card-title>
+            <mat-card-title>Transformação (IR/PlanV1)</mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <!-- DSL Profile -->
-            <mat-form-field appearance="outline" class="full-width" formGroupName="dsl">
-              <mat-label>Perfil DSL</mat-label>
-              <mat-select formControlName="profile" data-testid="version-editor.dslProfile">
-                <mat-option value="jsonata">JSONata</mat-option>
-                <mat-option value="jmespath">JMESPath</mat-option>
-                <mat-option value="custom">Custom</mat-option>
-              </mat-select>
-            </mat-form-field>
+            <!-- DSL Profile - fixo 'ir' conforme specs/frontend/11-ui/ui-ai-assistant.md -->
+            <div class="dsl-profile-info">
+              <mat-icon>code</mat-icon>
+              <span>Perfil DSL: <strong>IR (Plan V1)</strong></span>
+            </div>
 
-            <!-- DSL Text -->
+            <!-- DSL Text (Plan JSON) -->
             <ms-json-editor-lite
-              title="Código DSL"
+              title="Plan IR (JSON)"
               [valueText]="dslText"
-              mode="text"
+              mode="json"
               [height]="200"
               (onChange)="onDslTextChange($event)"
               testId="version-editor.dslText">
@@ -256,17 +254,80 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
 
             <!-- AI Form -->
             <div *ngIf="aiState !== 'disabled'" class="ai-form">
+              <!-- Goal Text -->
               <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Descreva o objetivo</mat-label>
+                <mat-label>Descreva o CSV desejado</mat-label>
                 <textarea
                   matInput
                   [(ngModel)]="aiGoalText"
                   [ngModelOptions]="{standalone: true}"
                   rows="3"
-                  placeholder="Ex: Extrair total de vendas por trimestre..."
-                  data-testid="version-editor.aiGoal">
+                  minlength="10"
+                  maxlength="4000"
+                  placeholder="Ex: Gerar CSV com timestamp, hostName e cpuUsagePercent..."
+                  data-testid="ai.goalText">
                 </textarea>
+                <mat-hint>Mín. 10 caracteres, máx. 4000</mat-hint>
               </mat-form-field>
+
+              <!-- Hints (optional) -->
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Colunas desejadas (opcional)</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="aiHintsColumns"
+                  [ngModelOptions]="{standalone: true}"
+                  maxlength="200"
+                  placeholder="Ex: id, name, total"
+                  data-testid="ai.hints.columns">
+                <mat-hint>Lista de colunas separadas por vírgula (máx. 200 caracteres)</mat-hint>
+              </mat-form-field>
+
+              <!-- Constraints (Advanced section) -->
+              <mat-expansion-panel class="constraints-panel">
+                <mat-expansion-panel-header>
+                  <mat-panel-title>Constraints (Avançado)</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="constraints-content">
+                  <mat-form-field appearance="outline" class="constraint-field">
+                    <mat-label>Max Columns</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      [(ngModel)]="aiConstraints.maxColumns"
+                      [ngModelOptions]="{standalone: true}"
+                      min="1"
+                      max="200"
+                      data-testid="ai.constraints.maxColumns">
+                    <mat-hint>1-200 (default: 50)</mat-hint>
+                  </mat-form-field>
+
+                  <div class="constraint-checkboxes">
+                    <mat-checkbox
+                      [(ngModel)]="aiConstraints.allowTransforms"
+                      [ngModelOptions]="{standalone: true}"
+                      data-testid="ai.constraints.allowTransforms">
+                      Allow Transforms
+                    </mat-checkbox>
+
+                    <mat-checkbox
+                      [(ngModel)]="aiConstraints.forbidNetworkCalls"
+                      [ngModelOptions]="{standalone: true}"
+                      [disabled]="true"
+                      data-testid="ai.constraints.forbidNetworkCalls">
+                      Forbid Network Calls (obrigatório)
+                    </mat-checkbox>
+
+                    <mat-checkbox
+                      [(ngModel)]="aiConstraints.forbidCodeExecution"
+                      [ngModelOptions]="{standalone: true}"
+                      [disabled]="true"
+                      data-testid="ai.constraints.forbidCodeExecution">
+                      Forbid Code Execution (obrigatório)
+                    </mat-checkbox>
+                  </div>
+                </div>
+              </mat-expansion-panel>
 
               <div class="ai-actions">
                 <button
@@ -274,7 +335,7 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
                   color="primary"
                   [disabled]="!canGenerateAi()"
                   (click)="generateWithAi()"
-                  data-testid="version-editor.aiGenerate">
+                  data-testid="ai.generate">
                   <mat-spinner *ngIf="aiState === 'generating'" diameter="20"></mat-spinner>
                   <mat-icon *ngIf="aiState !== 'generating'">auto_awesome</mat-icon>
                   {{ aiState === 'generating' ? 'Gerando...' : 'Gerar' }}
@@ -285,7 +346,7 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
                   mat-button
                   color="primary"
                   (click)="applyAiResult()"
-                  data-testid="version-editor.aiApply">
+                  data-testid="ai.apply">
                   <mat-icon>check</mat-icon>
                   Aplicar Sugestão
                 </button>
@@ -295,6 +356,12 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
               <div *ngIf="aiState === 'generated' && aiResult" class="ai-result">
                 <h4>Sugestão da IA</h4>
                 <p class="ai-rationale">{{ aiResult.rationale }}</p>
+
+                <!-- Plan Preview (read-only) -->
+                <div *ngIf="aiResult.plan" class="ai-plan-preview">
+                  <strong>Plan gerado:</strong>
+                  <pre>{{ aiResult.plan | json }}</pre>
+                </div>
 
                 <div *ngIf="aiResult.warnings && aiResult.warnings.length > 0" class="ai-warnings">
                   <mat-icon>warning</mat-icon>
@@ -515,6 +582,52 @@ import { recordToKeyValueArray, keyValueArrayToRecord, safeJsonParse, formatJson
       text-align: center;
       padding: 24px;
     }
+
+    .dsl-profile-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--mat-sys-surface-variant);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .constraints-panel {
+      margin-bottom: 16px;
+    }
+
+    .constraints-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px 0;
+    }
+
+    .constraint-field {
+      max-width: 200px;
+    }
+
+    .constraint-checkboxes {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ai-plan-preview {
+      margin-top: 12px;
+      padding: 12px;
+      background: #E3F2FD;
+      border-radius: 4px;
+    }
+
+    .ai-plan-preview pre {
+      margin: 8px 0 0;
+      font-size: 12px;
+      max-height: 150px;
+      overflow: auto;
+    }
   `]
 })
 export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
@@ -545,10 +658,15 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
   queryParamsItems: KeyValueItem[] = [];
 
   // AI Assistant
+  // Conforme specs/frontend/11-ui/ui-ai-assistant.md
   aiState: AiAssistantState = 'idle';
   aiGoalText = '';
+  aiHintsColumns = '';
+  aiConstraints: DslGenerateConstraints = createDefaultConstraints();
   aiResult: DslGenerateResult | null = null;
   aiErrorMessage = '';
+  /** Plan gerado pela IA - preservar para preview */
+  lastGeneratedPlan: unknown | null = null;
 
   // Preview
   previewLoading = false;
@@ -659,7 +777,7 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
         contentType: formValue.sourceRequest.contentType?.trim() || undefined
       },
       dsl: {
-        profile: formValue.dsl.profile,
+        profile: 'ir',  // Fixo 'ir' conforme specs/frontend/11-ui/ui-ai-assistant.md
         text: this.dslText
       },
       outputSchema: outputSchemaResult.data,
@@ -739,7 +857,7 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
   canGenerateAi(): boolean {
     return this.aiState !== 'generating' &&
            this.aiState !== 'disabled' &&
-           this.aiGoalText.trim() !== '' &&
+           this.aiGoalText.trim().length >= 10 &&
            this.sampleInputText.trim() !== '';
   }
 
@@ -756,19 +874,30 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
     this.aiResult = null;
     this.aiErrorMessage = '';
 
+    // Conforme specs/frontend/11-ui/ui-ai-assistant.md: dslProfile sempre 'ir'
     const request: DslGenerateRequest = {
       goalText: this.aiGoalText,
       sampleInput: sampleInputResult.data,
-      dslProfile: this.form.get('dsl.profile')?.value || 'jsonata',
-      constraints: createDefaultConstraints(),
-      existingDsl: this.dslText || null,
-      existingOutputSchema: this.outputSchemaText ? (safeJsonParse(this.outputSchemaText).success ? (safeJsonParse(this.outputSchemaText) as { success: true; data: any }).data : null) : null
+      dslProfile: 'ir',
+      constraints: {
+        ...this.aiConstraints,
+        // Garantir que forbidNetworkCalls e forbidCodeExecution são sempre true
+        forbidNetworkCalls: true,
+        forbidCodeExecution: true
+      },
+      hints: this.aiHintsColumns.trim() ? { columns: this.aiHintsColumns.trim() } : null,
+      existingDsl: this.dslText ? { profile: 'ir', text: this.dslText } : null,
+      existingOutputSchema: this.outputSchemaText ? (safeJsonParse(this.outputSchemaText).success ? (safeJsonParse(this.outputSchemaText) as { success: true; data: unknown }).data : null) : null
     };
 
     this.aiService.generateDsl(request).subscribe({
       next: (result) => {
         this.aiResult = result;
         this.aiState = 'generated';
+        // Preservar plan para preview (conforme spec)
+        if (result.plan) {
+          this.lastGeneratedPlan = result.plan;
+        }
       },
       error: (error) => {
         const uiError = this.errorHandler.handleHttpError(error);
@@ -788,8 +917,14 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
     if (!this.aiResult) return;
 
     this.dslText = this.aiResult.dsl.text;
-    this.form.get('dsl.profile')?.setValue(this.aiResult.dsl.profile);
+    // Profile já é 'ir' fixo, não precisa atualizar form
     this.outputSchemaText = formatJson(this.aiResult.outputSchema);
+    
+    // Preservar plan para preview (conforme specs/frontend/11-ui/ui-ai-assistant.md)
+    if (this.aiResult.plan) {
+      this.lastGeneratedPlan = this.aiResult.plan;
+    }
+    
     this.isDirty = true;
     this.snackbar.success('Sugestão da IA aplicada.');
   }
@@ -821,17 +956,33 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
     this.previewLoading = true;
     this.previewResult = null;
 
+    // Conforme specs/frontend/11-ui/pages/preview-transform.md:
+    // - Se tiver plan em memória, enviar
+    // - Se não tiver e profile === 'ir', tentar extrair de dsl.text
+    let plan = this.lastGeneratedPlan;
+    if (!plan) {
+      plan = tryExtractPlan('ir', this.dslText);
+    }
+
     this.previewService.transform({
+      sampleInput: sampleInputResult.data,
       dsl: {
-        profile: this.form.get('dsl.profile')?.value || 'jsonata',
+        profile: 'ir',
         text: this.dslText
       },
       outputSchema: outputSchemaResult.data,
-      sampleInput: sampleInputResult.data
+      plan: plan
     }).subscribe({
       next: (result) => {
         this.previewResult = result;
         this.previewLoading = false;
+        
+        // Conforme spec: isValid=false é erro de validação, não exception
+        if (result.isValid) {
+          this.snackbar.success('Preview executado com sucesso.');
+        } else {
+          this.snackbar.warning('Preview executado com erros de validação.');
+        }
       },
       error: (error) => {
         const uiError = this.errorHandler.handleHttpError(error);
@@ -849,10 +1000,8 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
         method: ['GET', Validators.required],
         path: ['', Validators.required],
         contentType: ['']
-      }),
-      dsl: this.fb.group({
-        profile: ['jsonata', Validators.required]
       })
+      // DSL profile é fixo 'ir', não precisa de form control
     });
   }
 
@@ -864,10 +1013,8 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
         method: version.sourceRequest.method,
         path: version.sourceRequest.path,
         contentType: version.sourceRequest.contentType || ''
-      },
-      dsl: {
-        profile: version.dsl.profile
       }
+      // DSL profile é fixo 'ir', não precisa de patch
     });
 
     // Disable version field in edit mode
@@ -877,6 +1024,12 @@ export class VersionEditorComponent implements OnInit, HasUnsavedChanges {
     this.dslText = version.dsl.text;
     this.outputSchemaText = formatJson(version.outputSchema);
     this.sampleInputText = version.sampleInput ? formatJson(version.sampleInput) : '';
+
+    // Tentar extrair plan de dsl.text se profile === 'ir'
+    // Conforme specs/frontend/11-ui/ui-ai-assistant.md
+    if (version.dsl.profile === 'ir' && version.dsl.text) {
+      this.lastGeneratedPlan = tryExtractPlan('ir', version.dsl.text);
+    }
 
     // Set body text
     if (version.sourceRequest.body !== undefined && version.sourceRequest.body !== null) {

@@ -2,10 +2,18 @@
  * ProcessVersion Model - MetricsSimple
  * Derivado de: specs/shared/domain/schemas/processVersion.schema.json
  * Delta 1.2.0: body + contentType no SourceRequest
+ * 
+ * Conforme specs/frontend/11-ui/ui-api-client-contract.md:
+ * - DslProfile agora é sempre 'ir' (IR/PlanV1)
  */
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
-export type DslProfile = 'jsonata' | 'jmespath' | 'custom';
+
+/**
+ * DslProfile - Perfil de DSL
+ * Conforme specs/frontend/11-ui/ui-ai-assistant.md: apenas 'ir' é suportado
+ */
+export type DslProfile = 'ir';
 
 export interface SourceRequestDto {
   method: HttpMethod;
@@ -13,7 +21,7 @@ export interface SourceRequestDto {
   headers?: Record<string, string> | null;
   queryParams?: Record<string, string> | null;
   /** Request body (JSON ou string) para métodos POST/PUT */
-  body?: any;
+  body?: unknown;
   /** Content-Type override (ex.: application/json) */
   contentType?: string;
 }
@@ -29,14 +37,15 @@ export interface ProcessVersionDto {
   enabled: boolean;
   sourceRequest: SourceRequestDto;
   dsl: DslDto;
-  outputSchema: any;
-  sampleInput?: any;
+  outputSchema: unknown;
+  sampleInput?: unknown;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
 
 /**
  * Helper para criar uma ProcessVersion com valores default
+ * Conforme specs/frontend/11-ui/ui-ai-assistant.md: dsl.profile = 'ir'
  */
 export function createDefaultProcessVersion(processId: string): ProcessVersionDto {
   return {
@@ -50,7 +59,7 @@ export function createDefaultProcessVersion(processId: string): ProcessVersionDt
       queryParams: null
     },
     dsl: {
-      profile: 'jsonata',
+      profile: 'ir',
       text: ''
     },
     outputSchema: {},
@@ -72,10 +81,11 @@ export function createDefaultSourceRequest(): SourceRequestDto {
 
 /**
  * Helper para criar um DSL default
+ * Conforme specs/frontend/11-ui/ui-ai-assistant.md: profile = 'ir'
  */
 export function createDefaultDsl(): DslDto {
   return {
-    profile: 'jsonata',
+    profile: 'ir',
     text: ''
   };
 }

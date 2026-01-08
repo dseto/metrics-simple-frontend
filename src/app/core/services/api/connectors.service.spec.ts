@@ -13,7 +13,7 @@ describe('ConnectorsService', () => {
     id: 'test-connector',
     name: 'Test Connector',
     baseUrl: 'https://api.example.com',
-    authRef: 'API_KEY',
+    authType: 'BEARER',
     timeoutSeconds: 60,
     enabled: true,
     hasApiToken: false
@@ -78,13 +78,15 @@ describe('ConnectorsService', () => {
       const newConnector: ConnectorDto = { 
         ...mockConnector, 
         id: 'new-connector',
-        apiToken: 'secret-token'
+        apiToken: 'secret-token',
+        apiTokenSpecified: true
       };
 
       service.create(newConnector).subscribe();
 
       const req = httpMock.expectOne(baseUrl);
       expect(req.request.body.apiToken).toBe('secret-token');
+      expect(req.request.body.apiTokenSpecified).toBe(true);
       expect(req.request.body.hasApiToken).toBeUndefined(); // read-only
       req.flush({...newConnector, hasApiToken: true});
     });
@@ -106,26 +108,30 @@ describe('ConnectorsService', () => {
     it('should update with apiToken=null to clear token', () => {
       const updatedConnector: ConnectorDto = { 
         ...mockConnector, 
-        apiToken: null 
+        apiToken: null,
+        apiTokenSpecified: true
       };
 
       service.update('test-connector', updatedConnector).subscribe();
 
       const req = httpMock.expectOne(`${baseUrl}/test-connector`);
       expect(req.request.body.apiToken).toBeNull();
+      expect(req.request.body.apiTokenSpecified).toBe(true);
       req.flush({...updatedConnector, hasApiToken: false});
     });
 
     it('should update with new apiToken', () => {
       const updatedConnector: ConnectorDto = { 
         ...mockConnector, 
-        apiToken: 'new-secret-token' 
+        apiToken: 'new-secret-token',
+        apiTokenSpecified: true
       };
 
       service.update('test-connector', updatedConnector).subscribe();
 
       const req = httpMock.expectOne(`${baseUrl}/test-connector`);
       expect(req.request.body.apiToken).toBe('new-secret-token');
+      expect(req.request.body.apiTokenSpecified).toBe(true);
       req.flush({...updatedConnector, hasApiToken: true});
     });
 

@@ -10,9 +10,12 @@ describe('PreviewService', () => {
   const baseUrl = `${environment.apiBaseUrl}/preview`;
 
   const mockRequest: PreviewTransformRequest = {
+    sampleInput: {
+      data: { total: 100 }
+    },
     dsl: {
-      profile: 'jsonata',
-      text: '$.data'
+      profile: 'ir',
+      text: '{"version":1,"columns":[{"name":"total","path":"$.data.total"}]}'
     },
     outputSchema: {
       type: 'object',
@@ -20,9 +23,7 @@ describe('PreviewService', () => {
         total: { type: 'number' }
       }
     },
-    sampleInput: {
-      data: { total: 100 }
-    }
+    plan: { version: 1, columns: [{ name: 'total', path: '$.data.total' }] }
   };
 
   const mockResponse: PreviewTransformResponse = {

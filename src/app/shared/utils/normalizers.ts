@@ -282,6 +282,37 @@ export function safeJsonParse(text: string): { success: true; data: any } | { su
 /**
  * Stringify JSON com formatação
  */
-export function formatJson(data: any): string {
+export function formatJson(data: unknown): string {
   return JSON.stringify(data, null, 2);
+}
+
+/**
+ * PlanExtractor - Extrai plan de dsl.text quando profile === 'ir'
+ * Conforme specs/frontend/09-testing/security-auth-tests.md:
+ * - dado dsl.profile === 'ir' e dsl.text JSON válido → retorna plan object
+ * - se JSON inválido → retorna null e não lança exception
+ * 
+ * Conforme specs/frontend/11-ui/ui-ai-assistant.md:
+ * - Se abrir versão salva e não houver plan em memória, tentar derivar plan
+ *   fazendo JSON.parse(dsl.text) quando dsl.profile === 'ir'
+ */
+export function tryExtractPlan(dslProfile: string, dslText: string): unknown | null {
+  if (dslProfile !== 'ir') {
+    return null;
+  }
+
+  if (!dslText || dslText.trim() === '') {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(dslText);
+    // Verificar se é um objeto (plan deve ser objeto, não array ou primitivo)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }

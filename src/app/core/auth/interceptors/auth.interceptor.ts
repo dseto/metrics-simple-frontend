@@ -29,11 +29,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
-  // URLs de auth que não precisam de token
-  const authEndpoints = ['/api/auth/token'];
-  const isAuthEndpoint = authEndpoints.some(endpoint => req.url.includes(endpoint));
+  // URLs que não precisam de token conforme specs/frontend/04-execution/auth-flow-and-interceptors.md
+  // - /health: health check
+  // - /api/auth/token: login endpoint
+  const noAuthEndpoints = ['/api/auth/token', '/health'];
+  const isNoAuthEndpoint = noAuthEndpoints.some(endpoint => req.url.includes(endpoint));
 
-  if (isAuthEndpoint) {
+  if (isNoAuthEndpoint) {
     return next(req);
   }
 

@@ -17,7 +17,7 @@ describe('AiService', () => {
         { quarter: 'Q2', amount: 1500 }
       ]
     },
-    dslProfile: 'jsonata',
+    dslProfile: 'ir',
     constraints: createDefaultConstraints(),
     existingDsl: null,
     existingOutputSchema: null
@@ -25,8 +25,8 @@ describe('AiService', () => {
 
   const mockResponse: DslGenerateResult = {
     dsl: {
-      profile: 'jsonata',
-      text: '$.sales.{ "quarter": quarter, "total": amount }'
+      profile: 'ir',
+      text: '{"version":1,"columns":[{"name":"quarter"},{"name":"total"}]}'
     },
     outputSchema: {
       type: 'array',
@@ -38,6 +38,7 @@ describe('AiService', () => {
         }
       }
     },
+    plan: { version: 1, columns: [{ name: 'quarter' }, { name: 'total' }] },
     rationale: 'Extracted quarter and amount fields from sales array',
     warnings: []
   };
@@ -60,7 +61,7 @@ describe('AiService', () => {
     it('should return generated DSL and schema', () => {
       service.generateDsl(mockRequest).subscribe(response => {
         expect(response).toEqual(mockResponse);
-        expect(response.dsl.profile).toBe('jsonata');
+        expect(response.dsl.profile).toBe('ir');
         expect(response.rationale).toBeTruthy();
       });
 

@@ -20,8 +20,8 @@ describe('VersionsService', () => {
       queryParams: {}
     },
     dsl: {
-      profile: 'jsonata',
-      text: '$.data'
+      profile: 'ir',
+      text: '{"version":1,"columns":[{"name":"data"}]}'
     },
     outputSchema: { type: 'object' },
     sampleInput: { data: [] }

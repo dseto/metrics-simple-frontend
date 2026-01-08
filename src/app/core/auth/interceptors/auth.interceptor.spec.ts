@@ -85,5 +85,16 @@ describe('AuthInterceptor', () => {
       expect(req.request.headers.has('Authorization')).toBe(false);
       req.flush({});
     });
+
+    it('não deve adicionar Authorization para endpoint /health', () => {
+      mockAuthProvider.getAccessToken.and.returnValue('test-token');
+      const healthUrl = testApiBaseUrl.replace('/api/v1', '/health');
+
+      httpClient.get(healthUrl).subscribe();
+
+      const req = httpMock.expectOne(healthUrl);
+      expect(req.request.headers.has('Authorization')).toBe(false);
+      req.flush({ status: 'ok' });
+    });
   });
 });

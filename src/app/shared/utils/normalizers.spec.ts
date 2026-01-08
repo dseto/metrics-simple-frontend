@@ -6,7 +6,8 @@ import {
   recordToKeyValueArray,
   keyValueArrayToRecord,
   safeJsonParse,
-  formatJson
+  formatJson,
+  tryExtractPlan
 } from './normalizers';
 import { ProcessDto, ProcessStatus } from '../models/process.model';
 import { ConnectorDto } from '../models/connector.model';
@@ -77,7 +78,7 @@ describe('Normalizers', () => {
         id: '  my-connector  ',
         name: '  My Connector  ',
         baseUrl: '  https://api.example.com  ',
-        authRef: '  API_KEY  ',
+        authType: 'BEARER',
         timeoutSeconds: 60
       };
 
@@ -86,7 +87,7 @@ describe('Normalizers', () => {
       expect(result.id).toBe('my-connector');
       expect(result.name).toBe('My Connector');
       expect(result.baseUrl).toBe('https://api.example.com');
-      expect(result.authRef).toBe('API_KEY');
+      expect(result.authType).toBe('BEARER');
     });
 
     it('should remove hasApiToken (read-only)', () => {
@@ -94,7 +95,7 @@ describe('Normalizers', () => {
         id: 'test',
         name: 'Test',
         baseUrl: 'https://api.example.com',
-        authRef: 'KEY',
+        authType: 'BEARER',
         timeoutSeconds: 60,
         hasApiToken: true
       };
@@ -103,40 +104,44 @@ describe('Normalizers', () => {
       expect(result.hasApiToken).toBeUndefined();
     });
 
-    it('should handle apiToken as string (trim and keep)', () => {
+    it('should handle apiToken with apiTokenSpecified=true', () => {
       const connector: ConnectorDto = {
         id: 'test',
         name: 'Test',
         baseUrl: 'https://api.example.com',
-        authRef: 'KEY',
+        authType: 'BEARER',
         timeoutSeconds: 60,
-        apiToken: '  secret-token-123  '
+        apiToken: '  secret-token-123  ',
+        apiTokenSpecified: true
       };
 
       const result = normalizeConnector(connector);
       expect(result.apiToken).toBe('secret-token-123');
+      expect(result.apiTokenSpecified).toBe(true);
     });
 
-    it('should handle apiToken as null (explicit removal)', () => {
+    it('should handle apiToken as null with apiTokenSpecified (explicit removal)', () => {
       const connector: ConnectorDto = {
         id: 'test',
         name: 'Test',
         baseUrl: 'https://api.example.com',
-        authRef: 'KEY',
+        authType: 'BEARER',
         timeoutSeconds: 60,
-        apiToken: null
+        apiToken: null,
+        apiTokenSpecified: true
       };
 
       const result = normalizeConnector(connector);
       expect(result.apiToken).toBeNull();
+      expect(result.apiTokenSpecified).toBe(true);
     });
 
-    it('should omit apiToken when empty string (keep current token)', () => {
+    it('should not include apiToken when apiTokenSpecified is not set', () => {
       const connector: ConnectorDto = {
         id: 'test',
         name: 'Test',
         baseUrl: 'https://api.example.com',
-        authRef: 'KEY',
+        authType: 'BEARER',
         timeoutSeconds: 60,
         apiToken: '   '
       };
@@ -145,12 +150,12 @@ describe('Normalizers', () => {
       expect('apiToken' in result).toBe(false);
     });
 
-    it('should omit apiToken when undefined (keep current token)', () => {
+    it('should omit apiToken when apiTokenSpecified is absent', () => {
       const connector: ConnectorDto = {
         id: 'test',
         name: 'Test',
         baseUrl: 'https://api.example.com',
-        authRef: 'KEY',
+        authType: 'BEARER',
         timeoutSeconds: 60
       };
 
@@ -300,6 +305,58 @@ describe('Normalizers', () => {
     it('should handle null', () => {
       const result = formatJson(null);
       expect(result).toBe('null');
+    });
+  });
+
+  /**
+   * Testes de tryExtractPlan
+   * Conforme specs/frontend/09-testing/security-auth-tests.md
+   */
+  describe('tryExtractPlan', () => {
+    it('dado dsl.profile === "ir" e dsl.text JSON válido → retorna plan object', () => {
+      const planJson = JSON.stringify({ version: 1, columns: [{ name: 'id' }] });
+      const result = tryExtractPlan('ir', planJson);
+
+      expect(result).not.toBeNull();
+      expect((result as any).version).toBe(1);
+      expect((result as any).columns).toBeDefined();
+    });
+
+    it('se JSON inválido → retorna null e não lança exception', () => {
+      const invalidJson = 'not valid json {';
+      
+      // Não deve lançar exception
+      expect(() => tryExtractPlan('ir', invalidJson)).not.toThrow();
+      
+      const result = tryExtractPlan('ir', invalidJson);
+      expect(result).toBeNull();
+    });
+
+    it('se profile não é "ir" → retorna null', () => {
+      const validJson = JSON.stringify({ version: 1 });
+      
+      expect(tryExtractPlan('jsonata', validJson)).toBeNull();
+      expect(tryExtractPlan('jmespath', validJson)).toBeNull();
+      expect(tryExtractPlan('custom', validJson)).toBeNull();
+    });
+
+    it('se dsl.text está vazio → retorna null', () => {
+      expect(tryExtractPlan('ir', '')).toBeNull();
+      expect(tryExtractPlan('ir', '   ')).toBeNull();
+    });
+
+    it('se JSON é array → retorna null (plan deve ser objeto)', () => {
+      const arrayJson = JSON.stringify([1, 2, 3]);
+      const result = tryExtractPlan('ir', arrayJson);
+      
+      expect(result).toBeNull();
+    });
+
+    it('se JSON é primitivo → retorna null', () => {
+      expect(tryExtractPlan('ir', '"string"')).toBeNull();
+      expect(tryExtractPlan('ir', '123')).toBeNull();
+      expect(tryExtractPlan('ir', 'true')).toBeNull();
+      expect(tryExtractPlan('ir', 'null')).toBeNull();
     });
   });
 });

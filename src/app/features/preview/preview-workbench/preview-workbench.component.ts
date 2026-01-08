@@ -18,7 +18,7 @@ import { SnackbarService } from '../../../core/services/snackbar.service';
 import { PreviewTransformResponse } from '../../../shared/models/preview.model';
 import { DslProfile } from '../../../shared/models/process-version.model';
 import { UiError } from '../../../shared/models/api-error.model';
-import { safeJsonParse } from '../../../shared/utils/normalizers';
+import { safeJsonParse, tryExtractPlan } from '../../../shared/utils/normalizers';
 
 /**
  * PreviewWorkbench - Página de preview de transformação
@@ -64,21 +64,16 @@ import { safeJsonParse } from '../../../shared/utils/normalizers';
             <mat-card-title>Entrada</mat-card-title>
           </mat-card-header>
           <mat-card-content>
-            <!-- DSL Profile -->
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Perfil DSL</mat-label>
-              <mat-select [(value)]="dslProfile" data-testid="preview.dslProfile">
-                <mat-option value="jsonata">JSONata</mat-option>
-                <mat-option value="jmespath">JMESPath</mat-option>
-                <mat-option value="custom">Custom</mat-option>
-              </mat-select>
-            </mat-form-field>
+            <!-- DSL Profile - fixo 'ir' conforme specs/frontend/11-ui/ui-ai-assistant.md -->
+            <div class="dsl-profile-info">
+              <span>Perfil DSL: <strong>IR (Plan V1)</strong></span>
+            </div>
 
-            <!-- DSL Text -->
+            <!-- DSL Text (Plan JSON) -->
             <ms-json-editor-lite
-              title="Código DSL"
+              title="Plan IR (JSON)"
               [valueText]="dslText"
-              mode="text"
+              mode="json"
               [height]="150"
               (onChange)="dslText = $event"
               testId="preview.dslText">
@@ -193,6 +188,15 @@ import { safeJsonParse } from '../../../shared/utils/normalizers';
       width: 100%;
     }
 
+    .dsl-profile-info {
+      padding: 8px 12px;
+      background: var(--mat-sys-surface-variant);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
     .run-button {
       align-self: flex-start;
     }
@@ -284,10 +288,12 @@ export class PreviewWorkbenchComponent implements OnInit {
   private readonly errorHandler = inject(ErrorHandlerService);
   private readonly snackbar = inject(SnackbarService);
 
-  dslProfile: DslProfile = 'jsonata';
+  // DSL profile fixo 'ir' conforme specs/frontend/11-ui/ui-ai-assistant.md
   dslText = '';
   outputSchemaText = '{}';
   sampleInputText = '';
+  /** Plan recebido via query params ou extraído do dsl.text */
+  plan: unknown | null = null;
 
   loading = false;
   result: PreviewTransformResponse | null = null;
@@ -296,9 +302,7 @@ export class PreviewWorkbenchComponent implements OnInit {
   ngOnInit(): void {
     // Check for prefill from query params (from VersionEditor)
     const queryParams = this.route.snapshot.queryParams;
-    if (queryParams['dslProfile']) {
-      this.dslProfile = queryParams['dslProfile'];
-    }
+    // dslProfile é ignorado - sempre 'ir'
     if (queryParams['dslText']) {
       this.dslText = queryParams['dslText'];
     }
@@ -307,6 +311,16 @@ export class PreviewWorkbenchComponent implements OnInit {
     }
     if (queryParams['sampleInput']) {
       this.sampleInputText = queryParams['sampleInput'];
+    }
+    // Tentar extrair plan do dslText se não vier via query param
+    if (queryParams['plan']) {
+      try {
+        this.plan = JSON.parse(queryParams['plan']);
+      } catch {
+        this.plan = null;
+      }
+    } else if (this.dslText) {
+      this.plan = tryExtractPlan('ir', this.dslText);
     }
   }
 
@@ -336,18 +350,28 @@ export class PreviewWorkbenchComponent implements OnInit {
     this.result = null;
     this.error = undefined;
 
+    // Conforme specs/frontend/11-ui/pages/preview-transform.md:
+    // - Se tiver plan em memória, enviar
+    // - Se não tiver, tentar extrair de dsl.text
+    let planToSend = this.plan;
+    if (!planToSend) {
+      planToSend = tryExtractPlan('ir', this.dslText);
+    }
+
     this.previewService.transform({
+      sampleInput: sampleInputResult.data,
       dsl: {
-        profile: this.dslProfile,
+        profile: 'ir',
         text: this.dslText
       },
       outputSchema: outputSchemaResult.data,
-      sampleInput: sampleInputResult.data
+      plan: planToSend
     }).subscribe({
       next: (response) => {
         this.result = response;
         this.loading = false;
 
+        // Conforme spec: isValid=false é erro de validação, não exception
         if (response.isValid) {
           this.snackbar.success('Transformação executada com sucesso!');
         } else {

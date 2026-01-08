@@ -61,7 +61,7 @@ describe('ErrorInterceptor', () => {
 
       expect(mockAuthProvider.logout).toHaveBeenCalled();
       expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
-      expect(mockSnackbar.warning).toHaveBeenCalledWith('Sua sessão expirou. Faça login novamente.');
+      expect(mockSnackbar.warning).toHaveBeenCalledWith('Sessão expirada. Faça login novamente.');
       expect(error).toBeDefined();
       expect(error.status).toBe(401);
     }));
@@ -97,7 +97,7 @@ describe('ErrorInterceptor', () => {
 
       tick();
 
-      expect(mockSnackbar.error).toHaveBeenCalledWith('Você não tem permissão para essa ação.');
+      expect(mockSnackbar.error).toHaveBeenCalledWith('Sem permissão para esta ação.');
       expect(mockAuthProvider.logout).not.toHaveBeenCalled();
       expect(error).toBeDefined();
       expect(error.status).toBe(403);

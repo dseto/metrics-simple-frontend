@@ -21,8 +21,8 @@ describe('LocalJwtAuthProvider', () => {
   const authBaseUrl = testApiBaseUrl.replace('/api/v1', '/api');
 
   beforeEach(() => {
-    // Limpar sessionStorage antes de cada teste
-    sessionStorage.clear();
+    // Limpar localStorage antes de cada teste
+    localStorage.clear();
 
     const mockConfigService = jasmine.createSpyObj('RuntimeConfigService', [], {
       apiBaseUrl: testApiBaseUrl
@@ -43,7 +43,7 @@ describe('LocalJwtAuthProvider', () => {
 
   afterEach(() => {
     httpMock.verify();
-    sessionStorage.clear();
+    localStorage.clear();
   });
 
   describe('login', () => {
@@ -77,7 +77,7 @@ describe('LocalJwtAuthProvider', () => {
       tick();
 
       // Verificar que token foi salvo
-      expect(sessionStorage.getItem('metrics_access_token')).toBe(validToken);
+      expect(localStorage.getItem('metrics.auth.access_token')).toBe(validToken);
       expect(session).toBeDefined();
       expect(session.accessToken).toBe(validToken);
       expect(session.user?.sub).toBe('daniel');
@@ -98,7 +98,7 @@ describe('LocalJwtAuthProvider', () => {
 
       expect(error).toBeDefined();
       expect(error.status).toBe(401);
-      expect(sessionStorage.getItem('metrics_access_token')).toBeNull();
+      expect(localStorage.getItem('metrics.auth.access_token')).toBeNull();
     }));
 
     it('deve retornar erro em rate limit (429)', fakeAsync(() => {
@@ -115,20 +115,20 @@ describe('LocalJwtAuthProvider', () => {
 
       expect(error).toBeDefined();
       expect(error.status).toBe(429);
-      expect(sessionStorage.getItem('metrics_access_token')).toBeNull();
+      expect(localStorage.getItem('metrics.auth.access_token')).toBeNull();
     }));
   });
 
   describe('logout', () => {
-    it('deve limpar token do sessionStorage', () => {
+    it('deve limpar token do localStorage', () => {
       // Setup: simular token salvo
-      sessionStorage.setItem('metrics_access_token', 'test-token');
-      sessionStorage.setItem('metrics_user', JSON.stringify({ sub: 'test', roles: [] }));
+      localStorage.setItem('metrics.auth.access_token', 'test-token');
+      localStorage.setItem('metrics.auth.user', JSON.stringify({ sub: 'test', roles: [] }));
 
       provider.logout();
 
-      expect(sessionStorage.getItem('metrics_access_token')).toBeNull();
-      expect(sessionStorage.getItem('metrics_user')).toBeNull();
+      expect(localStorage.getItem('metrics.auth.access_token')).toBeNull();
+      expect(localStorage.getItem('metrics.auth.user')).toBeNull();
     });
 
     it('deve emitir null em currentUser$ após logout', fakeAsync(() => {
@@ -144,11 +144,14 @@ describe('LocalJwtAuthProvider', () => {
 
   describe('isAuthenticated', () => {
     it('deve retornar false quando não há token', () => {
+      localStorage.removeItem('metrics.auth.access_token');
+      // Recriar provider para pegar estado limpo do storage
+      provider = TestBed.inject(LocalJwtAuthProvider);
       expect(provider.isAuthenticated()).toBe(false);
     });
 
     it('deve retornar true quando há token', () => {
-      sessionStorage.setItem('metrics_access_token', 'test-token');
+      localStorage.setItem('metrics.auth.access_token', 'test-token');
 
       // Recriar provider para pegar estado do storage
       provider = TestBed.inject(LocalJwtAuthProvider);

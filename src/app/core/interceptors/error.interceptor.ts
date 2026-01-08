@@ -6,11 +6,11 @@ import { AuthProvider } from '../auth/providers';
 import { SnackbarService } from '../services/snackbar.service';
 
 /**
- * Mensagens de erro conforme specs/frontend/03-interfaces/security-error-handling.md
+ * Mensagens de erro conforme specs/frontend/04-execution/auth-flow-and-interceptors.md
  */
 const ERROR_MESSAGES = {
-  UNAUTHORIZED: 'Sua sessão expirou. Faça login novamente.',
-  FORBIDDEN: 'Você não tem permissão para essa ação.',
+  UNAUTHORIZED: 'Sessão expirada. Faça login novamente.',
+  FORBIDDEN: 'Sem permissão para esta ação.',
   TOO_MANY_REQUESTS: 'Muitas requisições. Aguarde um pouco e tente novamente.'
 } as const;
 
