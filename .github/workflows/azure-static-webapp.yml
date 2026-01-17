@@ -26,14 +26,13 @@ jobs:
       - name: Inject runtime config (apiBaseUrl -> Azure API)
         run: |
           mkdir -p ./dist/metrics-simple/browser/assets
-          cat > ./dist/metrics-simple/browser/assets/config.json << 'EOF'
-          {
-            "apiBaseUrl": "https://metrics-api-test-95794.azurewebsites.net/api/v1",
-            "aiEnabled": true,
-            "production": true,
-            "envName": "production"
-          }
-          EOF
+          API_BASE_URL="https://metrics-api-test-95794.azurewebsites.net/api/v1" \
+          AI_ENABLED="true" \
+          PRODUCTION="true" \
+          ENV_NAME="production" \
+          envsubst < src/assets/config.template.json > ./dist/metrics-simple/browser/assets/config.json
+          echo "✅ Config injected:"
+          cat ./dist/metrics-simple/browser/assets/config.json
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
