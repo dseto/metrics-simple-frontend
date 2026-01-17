@@ -23,22 +23,6 @@ jobs:
       - name: Build (production)
         run: npm run build -- --configuration production
 
-      - name: Inject runtime config (apiBaseUrl -> Azure API)
-        run: |
-          mkdir -p ./dist/metrics-simple/browser/assets
-          python3 << 'PYTHON'
-          import json
-          config = {
-            "apiBaseUrl": "https://metrics-api-test-95794.azurewebsites.net/api/v1",
-            "aiEnabled": True,
-            "production": True,
-            "envName": "production"
-          }
-          with open('./dist/metrics-simple/browser/assets/config.json', 'w') as f:
-            json.dump(config, f, indent=2)
-          print(f"✅ Config injected: {json.dumps(config, indent=2)}")
-          PYTHON
-
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
