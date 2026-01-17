@@ -1,0 +1,19 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*", "/*.json", "/*.txt"]
+  },
+  "responseOverrides": {
+    "404": "/index.html"
+  },
+  "routes": [
+    {
+      "route": "/assets/config.json",
+      "methods": ["GET"],
+      "allowedRoles": ["anonymous"],
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0"
+      }
+    }
+  ]
+}
